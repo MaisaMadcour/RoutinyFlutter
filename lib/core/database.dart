@@ -61,8 +61,11 @@ class AppDatabase {
   // ---- Tasks ----
   Future<List<TaskEntity>> tasksByDate(String date) async {
     final d = await db;
+    // Tasks with `date = ''` are "every day" (default starter tasks).
     final rows = await d.query('routiny_tasks',
-        where: 'date = ?', whereArgs: [date], orderBy: 'id ASC');
+        where: "date = ? OR date = ''",
+        whereArgs: [date],
+        orderBy: 'id ASC');
     return rows.map(TaskEntity.fromMap).toList();
   }
 

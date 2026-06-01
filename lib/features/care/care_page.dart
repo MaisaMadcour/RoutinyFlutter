@@ -72,6 +72,7 @@ class _CarePageState extends State<CarePage> {
                       ? 0
                       : (WaterPrefs.todayMl / WaterPrefs.goalMl)
                           .clamp(0.0, 1.0),
+                  baseline: 0.35,
                   strokeWidth: 4,
                 ),
               ),

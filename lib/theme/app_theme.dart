@@ -28,6 +28,23 @@ class AppTheme {
         backgroundColor: AppColors.routinyBg,
         surfaceTintColor: Colors.transparent,
       ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: AppColors.deepChocolate,
+        contentTextStyle: const TextStyle(
+          fontFamily: 'Raleway',
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+        ),
+        actionTextColor: AppColors.secondary,
+        behavior: SnackBarBehavior.floating,
+        elevation: 4,
+        insetPadding:
+            const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+        ),
+      ),
     );
   }
 }

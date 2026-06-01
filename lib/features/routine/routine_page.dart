@@ -58,7 +58,6 @@ class _RoutinePageState extends State<RoutinePage> {
     final result = await showCreateTaskSheet(context, edit: edit);
     if (result == null) return;
     if (edit == null) {
-      await RoutinyDefaults.clearIfActive();
       await AppDatabase.instance.insertTask(result);
       await RoutinyStats.recordTaskCreation();
     } else {
@@ -85,7 +84,7 @@ class _RoutinePageState extends State<RoutinePage> {
   @override
   Widget build(BuildContext context) {
     final hour = DateTime.now().hour;
-    final morning = hour >= 5 && hour <= 16;
+    final morning = hour >= 5 && hour < 12;
     return Stack(
       children: [
         Column(

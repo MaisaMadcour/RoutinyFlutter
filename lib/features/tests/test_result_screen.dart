@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../core/database.dart';
 import '../../core/models.dart';
-import '../../core/routiny_defaults.dart';
 import '../../core/routiny_stats.dart';
 import '../../theme/app_colors.dart';
 import 'test_intro_screen.dart';
@@ -27,7 +26,6 @@ class _TestResultScreenState extends State<TestResultScreen> {
   TestResultTier get _tier => widget.test.resultTiers[widget.tierIndex];
 
   Future<void> _adoptRoutine() async {
-    await RoutinyDefaults.clearIfActive();
     await AppDatabase.instance.insertTask(TaskEntity(
       title: widget.test.title.length > 15
           ? widget.test.title.substring(0, 15)
