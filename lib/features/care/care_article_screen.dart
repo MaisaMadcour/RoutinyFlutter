@@ -79,7 +79,12 @@ class _CareArticleScreenState extends State<CareArticleScreen> {
         ? 300.0
         : (mq.size.width / _imgAspect!).clamp(180.0, mq.size.height * 0.6);
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _closeWithAd();
+      },
+      child: Scaffold(
       backgroundColor: _pageBg,
       body: Stack(
         children: [
@@ -201,6 +206,7 @@ class _CareArticleScreenState extends State<CareArticleScreen> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

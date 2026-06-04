@@ -6,6 +6,7 @@ import 'package:lottie/lottie.dart';
 
 import '../../core/database.dart';
 import '../../core/models.dart';
+import 'focus_notification.dart';
 import 'focus_result_screen.dart';
 import 'focus_sounds.dart';
 import 'sound_picker_sheet.dart';
@@ -48,6 +49,12 @@ class _FocusRunningScreenState extends State<FocusRunningScreen> {
     _sessionStart = DateTime.now().millisecondsSinceEpoch;
     _remaining = widget.focusMinutes * 60;
     _startTicker();
+    // start the persistent foreground notification (lock screen + status bar)
+    FocusNotification.start(
+      minutes: widget.focusMinutes,
+      taskTitle: widget.taskTitle,
+      pomodoroNumber: _currentPomodoro,
+    );
   }
 
   void _startTicker() {
@@ -69,6 +76,7 @@ class _FocusRunningScreenState extends State<FocusRunningScreen> {
         _currentPomodoro++;
         _remaining = widget.focusMinutes * 60;
       });
+      _syncNotification();
       return;
     }
     // focus finished
@@ -87,11 +95,21 @@ class _FocusRunningScreenState extends State<FocusRunningScreen> {
         _remaining = widget.focusMinutes * 60;
       });
     }
+    _syncNotification();
+  }
+
+  void _syncNotification() {
+    FocusNotification.update(
+      seconds: _remaining,
+      taskTitle: _onBreak ? 'استراحة' : widget.taskTitle,
+      pomodoroNumber: _currentPomodoro,
+    );
   }
 
   Future<void> _finish({required bool completed}) async {
     _ticker?.cancel();
     _holdTimer?.cancel();
+    await FocusNotification.stop();
     await _audio.stop();
     final now = DateTime.now().millisecondsSinceEpoch;
     final planned = widget.focusMinutes * 60;
@@ -147,6 +165,7 @@ class _FocusRunningScreenState extends State<FocusRunningScreen> {
     _ticker?.cancel();
     _holdTimer?.cancel();
     _audio.dispose();
+    FocusNotification.stop();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
   }
@@ -188,32 +207,40 @@ class _FocusRunningScreenState extends State<FocusRunningScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _pips(),
-                  const SizedBox(height: 30),
+                  // clock-only (flip) mode hides the pips
+                  if (!_flip) ...[
+                    _pips(),
+                    const SizedBox(height: 30),
+                  ],
                   Transform.rotate(
                     angle: _flip ? 1.5708 : 0,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        _clock(mm, ss),
-                        const SizedBox(height: 6),
-                        CustomPaint(
-                          size: const Size(220, 16),
-                          painter: _WavyLine(),
-                        ),
+                        _clock(mm, ss, big: _flip),
+                        // underline + bear only in normal mode
+                        if (!_flip) ...[
+                          const SizedBox(height: 6),
+                          CustomPaint(
+                            size: const Size(220, 16),
+                            painter: _WavyLine(),
+                          ),
+                        ],
                       ],
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: 200,
-                    height: 200,
-                    child: Lottie.asset(
-                      _onBreak
-                          ? 'assets/lottie/coffee_break_dark.json'
-                          : 'assets/lottie/green_bird_waiting.json',
+                  if (!_flip) ...[
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: 200,
+                      height: 200,
+                      child: Lottie.asset(
+                        _onBreak
+                            ? 'assets/lottie/coffee_break_dark.json'
+                            : 'assets/lottie/green_bird_waiting.json',
+                      ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
@@ -273,10 +300,12 @@ class _FocusRunningScreenState extends State<FocusRunningScreen> {
     );
   }
 
-  Widget _clock(String mm, String ss) {
+  Widget _clock(String mm, String ss, {bool big = false}) {
+    final size = big ? 130.0 : 84.0;
+    final colonSize = big ? 116.0 : 74.0;
     TextStyle digit(Color c) => TextStyle(
           fontFamily: 'Montserrat',
-          fontSize: 84,
+          fontSize: size,
           height: 1.0,
           letterSpacing: -3,
           color: c,
@@ -291,7 +320,7 @@ class _FocusRunningScreenState extends State<FocusRunningScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 6),
             child: Text(':',
-                style: digit(Colors.white).copyWith(fontSize: 74)),
+                style: digit(Colors.white).copyWith(fontSize: colonSize)),
           ),
           Text(ss[0], style: digit(const Color(0xFFE8607E))),
           Text(ss[1], style: digit(const Color(0xFF3FA89B))),

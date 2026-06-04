@@ -51,13 +51,11 @@ android {
             } else {
                 signingConfigs.getByName("debug")
             }
-            // shrink code + resources to cut the release size
-            isMinifyEnabled = true
-            isShrinkResources = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
+            // NOTE: R8 minify strips WorkManager/Room classes and crashes at
+            // startup on Flutter, so it stays off. Size is already cut by the
+            // AAB's per-ABI delivery (~30 MB/device vs 67 MB universal).
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 }
