@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 
+import '../../core/ads/interstitial_manager.dart';
+import '../../core/app_strings.dart';
 import '../../core/ar_dates.dart';
 import '../../core/database.dart';
 import '../../core/models.dart';
@@ -56,7 +58,11 @@ class _RoutinePageState extends State<RoutinePage> {
 
   Future<void> _openCreate({TaskEntity? edit}) async {
     final result = await showCreateTaskSheet(context, edit: edit);
-    if (result == null) return;
+    if (result == null) {
+      // null can mean cancelled OR weekly tasks already inserted natively
+      await _reload();
+      return;
+    }
     if (edit == null) {
       await AppDatabase.instance.insertTask(result);
       await RoutinyStats.recordTaskCreation();
@@ -74,17 +80,16 @@ class _RoutinePageState extends State<RoutinePage> {
   }
 
   String _remainingText(int n) {
-    if (n == 0) return 'لا يوجد مهام';
-    if (n == 1) return 'مهمة واحدة';
-    if (n == 2) return 'مهمتان';
-    if (n <= 10) return '$n مهام';
-    return '$n مهمة';
+    if (n == 0) return S.noTasksYet;
+    if (n == 1) return S.oneTask;
+    if (n == 2) return S.twoTasks;
+    return S.tasksCount(n);
   }
 
   @override
   Widget build(BuildContext context) {
     final hour = DateTime.now().hour;
-    final morning = hour >= 5 && hour < 12;
+    final morning = hour >= 1 && hour < 12;
     return Stack(
       children: [
         Column(
@@ -155,7 +160,7 @@ class _RoutinePageState extends State<RoutinePage> {
             children: [
               Row(
                 children: [
-                  Text(morning ? 'صباح الخير' : 'مساء الخير',
+                  Text(morning ? S.greetingMorning : S.greetingEvening,
                       style: const TextStyle(
                           fontFamily: 'Raleway',
                           fontSize: 13,
@@ -208,17 +213,54 @@ class _RoutinePageState extends State<RoutinePage> {
         children: [
           Row(
             children: [
-              Text(
-                ArDates.monthYear(_visibleWeek),
-                style: const TextStyle(
-                    fontFamily: 'Raleway',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.calendarMonthText),
+              GestureDetector(
+                onTap: () async {
+                  final date = await showDatePicker(
+                    context: context,
+                    initialDate: _selected,
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2030),
+                    builder: (ctx, child) => Theme(
+                      data: Theme.of(ctx).copyWith(
+                        colorScheme: const ColorScheme.light(
+                          primary: AppColors.primary,
+                          onPrimary: Colors.white,
+                          surface: AppColors.routinyBg,
+                          onSurface: AppColors.deepChocolate,
+                          secondary: AppColors.primary,
+                          onSecondary: Colors.white,
+                        ),
+                        textButtonTheme: TextButtonThemeData(
+                          style: TextButton.styleFrom(
+                              foregroundColor: AppColors.primary),
+                        ),
+                      ),
+                      child: child!,
+                    ),
+                  );
+                  if (date != null) {
+                    _weekCtrl.jumpToWeekOf(date);
+                    _selectDay(date);
+                    setState(() => _visibleWeek = ArDates.startOfWeek(date));
+                  }
+                },
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      ArDates.monthYear(_visibleWeek),
+                      style: const TextStyle(
+                          fontFamily: 'Raleway',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.calendarMonthText),
+                    ),
+                    const SizedBox(width: 6),
+                    const Icon(Icons.keyboard_arrow_down,
+                        size: 16, color: AppColors.calendarMonthArrow),
+                  ],
+                ),
               ),
-              const SizedBox(width: 6),
-              const Icon(Icons.keyboard_arrow_down,
-                  size: 16, color: AppColors.calendarMonthArrow),
               const Spacer(),
               GestureDetector(
                 onTap: () {
@@ -347,7 +389,7 @@ class _RoutinePageState extends State<RoutinePage> {
 
   Widget _fabCluster() {
     return Positioned(
-      left: 20,
+      right: 20,
       bottom: 24,
       child: SizedBox(
         width: 200,
@@ -357,7 +399,7 @@ class _RoutinePageState extends State<RoutinePage> {
             AnimatedPositioned(
               duration: const Duration(milliseconds: 240),
               curve: Curves.easeOut,
-              left: _fabOpen ? 70 : 2,
+              right: _fabOpen ? 70 : 2,
               bottom: _fabOpen ? 80 : 2,
               child: AnimatedOpacity(
                 opacity: _fabOpen ? 1 : 0,
@@ -371,20 +413,26 @@ class _RoutinePageState extends State<RoutinePage> {
             AnimatedPositioned(
               duration: const Duration(milliseconds: 280),
               curve: Curves.easeOut,
-              left: _fabOpen ? 132 : 2,
+              right: _fabOpen ? 132 : 2,
               bottom: _fabOpen ? 80 : 2,
               child: AnimatedOpacity(
                 opacity: _fabOpen ? 1 : 0,
                 duration: const Duration(milliseconds: 240),
                 child: _miniFab(Icons.play_arrow, () {
                   setState(() => _fabOpen = false);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('شكراً لدعمك 💗')));
+                  InterstitialManager.instance.showIfReady(
+                    InterstitialManager.ctxSupport,
+                    onDone: () {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('شكراً لدعمك 💗')));
+                    },
+                  );
                 }),
               ),
             ),
             Positioned(
-              left: 0,
+              right: 0,
               bottom: 0,
               child: GestureDetector(
                 onTap: () => setState(() => _fabOpen = !_fabOpen),

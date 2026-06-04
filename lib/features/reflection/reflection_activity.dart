@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/app_strings.dart';
 import '../../core/database.dart';
 import '../../core/models.dart';
 import '../../core/routiny_stats.dart';
@@ -77,10 +78,10 @@ class _ReflectionActivityState extends State<ReflectionActivity> {
           Row(
             children: [
               const SizedBox(width: 44),
-              const Expanded(
-                child: Text('حاسة بإيه النهاردة',
+              Expanded(
+                child: Text(S.reflectionTitle,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: const TextStyle(
                         fontFamily: 'Raleway',
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
@@ -256,14 +257,14 @@ class _ReflectionActivityState extends State<ReflectionActivity> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('كيف تصفي شعورك اليوم؟',
-              style: TextStyle(
+          Text(S.feelingsQuestion,
+              style: const TextStyle(
                   fontFamily: 'Raleway',
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                   color: AppColors.deepChocolate)),
-          const Text('اختاري حتى 3',
-              style: TextStyle(
+          Text(S.feelingsHint,
+              style: const TextStyle(
                   fontFamily: 'Raleway',
                   fontSize: 12,
                   color: AppColors.secondaryText)),
@@ -271,14 +272,14 @@ class _ReflectionActivityState extends State<ReflectionActivity> {
           _chips<Feeling>(feelings, (f) => f.id, (f) => f.emoji,
               (f) => f.label, _feelings),
           const SizedBox(height: 24),
-          const Text('إيه اللي مؤثّر عليكي اليوم؟',
-              style: TextStyle(
+          Text(S.influencesQuestion,
+              style: const TextStyle(
                   fontFamily: 'Raleway',
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                   color: AppColors.deepChocolate)),
-          const Text('اختاري حتى 3',
-              style: TextStyle(
+          Text(S.influencesHint,
+              style: const TextStyle(
                   fontFamily: 'Raleway',
                   fontSize: 12,
                   color: AppColors.secondaryText)),
@@ -296,15 +297,15 @@ class _ReflectionActivityState extends State<ReflectionActivity> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('عايزة تزيحيها عن صدرك؟ ✍️',
-              style: TextStyle(
+          Text(S.journalQuestion,
+              style: const TextStyle(
                   fontFamily: 'Raleway',
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
                   color: AppColors.deepChocolate)),
           const SizedBox(height: 6),
-          const Text('استرخي — ده اختياري لكنّه هيساعدك.',
-              style: TextStyle(
+          Text(S.journalSubtitle,
+              style: const TextStyle(
                   fontFamily: 'Raleway',
                   fontSize: 13,
                   color: AppColors.secondaryText)),
@@ -325,17 +326,17 @@ class _ReflectionActivityState extends State<ReflectionActivity> {
                   fontFamily: 'Raleway',
                   fontSize: 15,
                   color: AppColors.deepChocolate),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 border: InputBorder.none,
-                hintText: 'ابدأي بتدوين مشاعرك...',
-                hintStyle: TextStyle(
+                hintText: S.journalHint,
+                hintStyle: const TextStyle(
                     fontFamily: 'Raleway', color: AppColors.hintText),
               ),
             ),
           ),
           const SizedBox(height: 10),
-          const Text('مش لازم — تقدري تتخطّى وتشوفي الرد',
-              style: TextStyle(
+          Text(S.journalSkipHint,
+              style: const TextStyle(
                   fontFamily: 'Raleway',
                   fontSize: 12,
                   color: AppColors.secondaryText)),
@@ -370,9 +371,9 @@ class _ReflectionActivityState extends State<ReflectionActivity> {
         _titledCard('💌 رسالة لك', r.supportMessage),
         _activityCard(r),
         const SizedBox(height: 8),
-        const Center(
-          child: Text('إحساسك النهاردة اتسجّل ✨',
-              style: TextStyle(
+        Center(
+          child: Text(S.responseRecorded,
+              style: const TextStyle(
                   fontFamily: 'Raleway',
                   fontSize: 13,
                   color: AppColors.secondaryText)),
@@ -415,9 +416,10 @@ class _ReflectionActivityState extends State<ReflectionActivity> {
   Widget _titledCard(String title, String body) {
     return _respCard(AppColors.surface,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Text(title,
+                textAlign: TextAlign.right,
                 style: const TextStyle(
                     fontFamily: 'Raleway',
                     fontSize: 16,
@@ -425,6 +427,7 @@ class _ReflectionActivityState extends State<ReflectionActivity> {
                     color: AppColors.deepChocolate)),
             const SizedBox(height: 8),
             Text(body,
+                textAlign: TextAlign.right,
                 style: const TextStyle(
                     fontFamily: 'Raleway',
                     fontSize: 14,
@@ -437,7 +440,7 @@ class _ReflectionActivityState extends State<ReflectionActivity> {
   Widget _routineCard(ReflectionResponse r) {
     return _respCard(AppColors.surface,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             const Text('📋 روتين مقترح',
                 style: TextStyle(
@@ -482,9 +485,8 @@ class _ReflectionActivityState extends State<ReflectionActivity> {
                         await RoutinyStats.recordTaskCreation();
                         if (!mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text(
-                                    'اتضافت كمهمة في صفحة الروتين 💗')));
+                            SnackBar(
+                                content: Text(S.routineAddedSnack)));
                       },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
@@ -507,9 +509,10 @@ class _ReflectionActivityState extends State<ReflectionActivity> {
     final rest = r.activityAction == ReflectionActivityAction.justRest;
     return _respCard(const Color(0xFFEFE3D6),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Text('${r.activityEmoji}  ${r.activityTitle}',
+                textAlign: TextAlign.right,
                 style: const TextStyle(
                     fontFamily: 'Raleway',
                     fontSize: 16,
@@ -517,6 +520,7 @@ class _ReflectionActivityState extends State<ReflectionActivity> {
                     color: AppColors.deepChocolate)),
             const SizedBox(height: 6),
             Text(r.activityDescription,
+                textAlign: TextAlign.right,
                 style: const TextStyle(
                     fontFamily: 'Raleway',
                     fontSize: 14,
@@ -543,7 +547,7 @@ class _ReflectionActivityState extends State<ReflectionActivity> {
                     break;
                 }
               },
-              child: Text(rest ? 'تمام، خدي وقتك 💗' : 'ابدأي دلوقتي ←',
+              child: Text(rest ? S.restBtn : S.startNowBtn,
                   style: const TextStyle(
                       fontFamily: 'Raleway',
                       fontSize: 14,
@@ -554,8 +558,14 @@ class _ReflectionActivityState extends State<ReflectionActivity> {
         ));
   }
 
+  bool get _canNext {
+    if (_step == 0) return _mood != null;
+    if (_step == 1) return _feelings.isNotEmpty && _influences.isNotEmpty;
+    return true;
+  }
+
   Widget _bottomBar() {
-    final canNext = _step != 0 || _mood != null;
+    final canNext = _canNext;
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Row(

@@ -35,6 +35,11 @@ class _TaskCardState extends State<TaskCard> {
   late List<bool> _checks;
   bool _lastAllDone = false;
   bool _confetti = false;
+  bool _deleting = false;
+
+  void _startDelete() {
+    setState(() => _deleting = true);
+  }
 
   @override
   void initState() {
@@ -86,23 +91,39 @@ class _TaskCardState extends State<TaskCard> {
       padding: const EdgeInsets.all(6),
       child: Stack(
         children: [
-          // action toolbar (revealed on long-press)
-          Positioned(
-            right: 0,
-            top: 0,
-            bottom: 0,
-            child: AnimatedOpacity(
-              opacity: widget.expanded ? 1 : 0,
-              duration: const Duration(milliseconds: 160),
-              child: Center(child: _toolbar()),
+          // action toolbar (revealed on long-press, hidden when deleting)
+          if (!_deleting)
+            Positioned(
+              right: 0,
+              top: 0,
+              bottom: 0,
+              child: AnimatedOpacity(
+                opacity: widget.expanded ? 1 : 0,
+                duration: const Duration(milliseconds: 160),
+                child: Center(child: _toolbar()),
+              ),
+            ),
+          Visibility(
+            visible: !_deleting,
+            child: AnimatedPadding(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOut,
+              padding: EdgeInsets.only(right: widget.expanded ? 58 : 0),
+              child: _cardBody(),
             ),
           ),
-          AnimatedPadding(
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeOut,
-            padding: EdgeInsets.only(right: widget.expanded ? 58 : 0),
-            child: _cardBody(),
-          ),
+          if (_deleting)
+            Positioned.fill(
+              child: Lottie.asset(
+                'assets/lottie/cancel.json',
+                repeat: false,
+                onLoaded: (c) {
+                  Future.delayed(c.duration, () {
+                    if (mounted) widget.onDelete();
+                  });
+                },
+              ),
+            ),
         ],
       ),
     );
@@ -140,7 +161,7 @@ class _TaskCardState extends State<TaskCard> {
       mainAxisSize: MainAxisSize.min,
       children: [
         btn(Icons.delete_outline, 'مسح', const Color(0xFF900C20),
-            widget.onDelete),
+            _startDelete),
         const SizedBox(height: 6),
         btn(Icons.edit_outlined, 'تعديل', AppColors.primary, widget.onEdit),
       ],

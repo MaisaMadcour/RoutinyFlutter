@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/app_strings.dart';
+import '../../core/ads/banner_ad_widget.dart';
 import '../../theme/app_colors.dart';
 import '../routine/routine_page.dart';
 import '../timer/timer_page.dart';
@@ -29,12 +31,13 @@ class _MainShellState extends State<MainShell> {
 
   // Index order: 0 settings, 1 care, 2 routine, 3 timer, 4 tests.
   // Under RTL the first child renders at the right edge.
-  static const _tabs = <_TabDef>[
-    _TabDef('الإعدادات', Icons.settings_outlined, Icons.settings),
-    _TabDef('عناية', Icons.spa_outlined, Icons.spa),
-    _TabDef('روتيني', Icons.check_circle_outline, Icons.check_circle),
-    _TabDef('مؤقت', Icons.timer_outlined, Icons.timer),
-    _TabDef('اختبار', Icons.edit_outlined, Icons.edit),
+  // Non-const because tab labels depend on the current language via S.navXxx.
+  List<_TabDef> get _tabs => [
+    _TabDef(S.navSettings, Icons.settings_outlined, Icons.settings),
+    _TabDef(S.navCare, Icons.spa_outlined, Icons.spa),
+    _TabDef(S.navRoutine, Icons.check_circle_outline, Icons.check_circle),
+    _TabDef(S.navTimer, Icons.timer_outlined, Icons.timer),
+    _TabDef(S.navTests, Icons.edit_outlined, Icons.edit),
   ];
 
   final _pages = const [
@@ -53,10 +56,16 @@ class _MainShellState extends State<MainShell> {
         return Scaffold(
           backgroundColor: AppColors.background,
           body: _pages[current],
-          bottomNavigationBar: _BottomNav(
-            tabs: _tabs,
-            current: current,
-            onTap: (i) => ShellController.tab.value = i,
+          bottomNavigationBar: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Center(child: BannerAdWidget()),
+              _BottomNav(
+                tabs: _tabs,
+                current: current,
+                onTap: (i) => ShellController.tab.value = i,
+              ),
+            ],
           ),
         );
       },

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/image_palette.dart';
 import '../../theme/app_colors.dart';
 import 'test_models.dart';
 import 'test_processing_screen.dart';
@@ -14,60 +15,91 @@ class TestQuestionScreen extends StatefulWidget {
 
 class _TestQuestionScreenState extends State<TestQuestionScreen> {
   int _index = 0;
-  int _score = 0;
   int? _selected;
+  bool _locked = false; // blocks taps during the brief reveal delay
+  final List<int> _answers = [];
 
-  void _pick(int option) {
-    setState(() => _selected = option);
+  // page bg = exact edge colour (matches Android TestQuestionActivity)
+  late Color _edge;
+
+  @override
+  void initState() {
+    super.initState();
+    _edge = AppColors.parseHex(widget.test.cardBgColor);
+    ImagePalette.from(
+      'assets/images/${widget.test.coverAsset}.jpg',
+      fallback: AppColors.parseHex(widget.test.cardBgColor),
+    ).then((c) { if (mounted) setState(() => _edge = c); });
   }
 
-  void _next() {
-    if (_selected == null) return;
-    _score += _selected!;
-    if (_index >= widget.test.questions.length - 1) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => TestProcessingScreen(
-            test: widget.test,
-            score: _score,
-            maxScore: widget.test.questions.length * 2,
-          ),
-        ),
-      );
-      return;
-    }
+  void _onAnswer(int option) {
+    if (_locked) return;
     setState(() {
-      _index++;
-      _selected = null;
+      _selected = option;
+      _locked = true;
     });
+    // brief delay so the vivid selection is visible, then advance (320ms = Android)
+    Future.delayed(const Duration(milliseconds: 320), () {
+      if (!mounted) return;
+      _answers.add(option);
+      if (_index >= widget.test.questions.length - 1) {
+        _finish();
+      } else {
+        setState(() {
+          _index++;
+          _selected = null;
+          _locked = false;
+        });
+      }
+    });
+  }
+
+  void _finish() {
+    final total = _answers.fold<int>(0, (a, b) => a + b);
+    final maxScore = widget.test.questions.length * 2;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => TestProcessingScreen(
+          test: widget.test,
+          score: total,
+          maxScore: maxScore,
+        ),
+      ),
+    );
+  }
+
+  void _goBack() {
+    if (_index == 0) {
+      Navigator.pop(context);
+    } else {
+      setState(() {
+        if (_answers.isNotEmpty) _answers.removeLast();
+        _index--;
+        _selected = null;
+        _locked = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final q = widget.test.questions[_index];
     final total = widget.test.questions.length;
+
     return Scaffold(
-      backgroundColor: AppColors.parseHex(widget.test.cardBgColor),
+      backgroundColor: _edge,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Column(
             children: [
+              // ── top bar ──────────────────────────────────────────────
               Row(
                 children: [
                   GestureDetector(
-                    onTap: () {
-                      if (_index == 0) {
-                        Navigator.pop(context);
-                      } else {
-                        setState(() {
-                          _index--;
-                          _selected = null;
-                        });
-                      }
-                    },
-                    child: const Icon(Icons.arrow_forward,
+                    onTap: _goBack,
+                    child: const Icon(Icons.arrow_back,
                         color: AppColors.deepChocolate),
                   ),
                   const Spacer(),
@@ -86,21 +118,25 @@ class _TestQuestionScreenState extends State<TestQuestionScreen> {
                 ],
               ),
               const SizedBox(height: 12),
+
+              // ── progress bar — white on translucent white (Android) ──
               ClipRRect(
                 borderRadius: BorderRadius.circular(100),
                 child: LinearProgressIndicator(
                   value: (_index + 1) / total,
                   minHeight: 8,
-                  backgroundColor: Colors.white54,
-                  color: AppColors.primary,
+                  backgroundColor: const Color(0x33FFFFFF),
+                  color: Colors.white,
                 ),
               ),
               const Spacer(flex: 2),
+
+              // ── question card ─────────────────────────────────────────
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  color: ImagePalette.lighten(_edge, 0.50),
                   borderRadius: BorderRadius.circular(24),
                 ),
                 child: Column(
@@ -119,31 +155,12 @@ class _TestQuestionScreenState extends State<TestQuestionScreen> {
                 ),
               ),
               const SizedBox(height: 18),
+
+              // ── answer options (tap = auto-advance) ───────────────────
               for (var i = 0; i < q.options.length; i++)
                 _option(i, q.options[i]),
+
               const Spacer(flex: 3),
-              SizedBox(
-                width: double.infinity,
-                height: 58,
-                child: ElevatedButton(
-                  onPressed: _selected == null ? null : _next,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    disabledBackgroundColor:
-                        AppColors.primary.withValues(alpha: 0.4),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(100)),
-                  ),
-                  child: Text(
-                      _index == total - 1 ? 'إنهاء' : 'التالي',
-                      style: const TextStyle(
-                          fontFamily: 'Raleway',
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white)),
-                ),
-              ),
-              const SizedBox(height: 20),
             ],
           ),
         ),
@@ -153,17 +170,22 @@ class _TestQuestionScreenState extends State<TestQuestionScreen> {
 
   Widget _option(int i, String text) {
     final selected = _selected == i;
+    final pale = ImagePalette.lighten(_edge, 0.55);
     return GestureDetector(
-      onTap: () => _pick(i),
-      child: Container(
+      onTap: () => _onAnswer(i),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
         width: double.infinity,
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary : AppColors.surface,
+          color: selected ? _edge : pale,
           borderRadius: BorderRadius.circular(100),
           border: Border.all(
-            color: selected ? AppColors.primary : AppColors.calendarDayStroke,
+            color: selected
+                ? ImagePalette.darken(_edge, 0.15)
+                : ImagePalette.lighten(_edge, 0.35),
+            width: selected ? 1.5 : 1.2,
           ),
         ),
         child: Text(text,
@@ -172,8 +194,11 @@ class _TestQuestionScreenState extends State<TestQuestionScreen> {
                 fontFamily: 'Raleway',
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
-                color:
-                    selected ? Colors.white : AppColors.deepChocolate)),
+                color: selected
+                    ? (ImagePalette.isDark(_edge)
+                        ? Colors.white
+                        : const Color(0xFF1A1A1A))
+                    : const Color(0xFF1A1A1A))),
       ),
     );
   }

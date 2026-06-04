@@ -106,7 +106,7 @@ class _PomodoroSettingsScreenState extends State<PomodoroSettingsScreen> {
         color: const Color(0xFFF0DCD0),
         borderRadius: BorderRadius.circular(100),
       ),
-      child: Row(children: [tab('بومودورو', true), tab('مؤقت', false)]),
+      child: Row(children: [tab('بومودورو', true), tab('تايم', false)]),
     );
   }
 

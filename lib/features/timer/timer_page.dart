@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
+import '../../core/app_strings.dart';
 import '../../theme/app_colors.dart';
 import 'focus_running_screen.dart';
 import 'focus_settings.dart';
@@ -31,7 +32,7 @@ class _TimerPageState extends State<TimerPage> {
   Future<void> _pickMinutes() async {
     final v = await showMinutesPicker(
       context,
-      title: _pomodoro ? 'اضبط مدة البومودورو' : 'اضبط مدة المؤقت',
+      title: _pomodoro ? S.pomodoroDurationTitle : S.timerDurationTitle,
       min: 1,
       max: 120,
       initial: _minutes,
@@ -56,7 +57,7 @@ class _TimerPageState extends State<TimerPage> {
           totalPomodoros: _pomodoro ? FocusSettings.pomodoroCycle : 1,
           breakMinutes: _pomodoro ? FocusSettings.shortBreakMinutes : 0,
           isPomodoro: _pomodoro,
-          taskTitle: _pomodoro ? 'تركيز' : 'مؤقت',
+          taskTitle: _pomodoro ? 'تركيز' : 'تايم',
         ),
       ),
     );
@@ -118,7 +119,7 @@ class _TimerPageState extends State<TimerPage> {
         mainAxisSize: MainAxisSize.min,
         children: [
           tab('بومودورو', _pomodoro, () => setState(() => _pomodoro = true)),
-          tab('مؤقت', !_pomodoro, () => setState(() => _pomodoro = false)),
+          tab('تايم', !_pomodoro, () => setState(() => _pomodoro = false)),
         ],
       ),
     );
@@ -209,7 +210,7 @@ class _TimerPageState extends State<TimerPage> {
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(100)),
                 ),
-                child: Text(_pomodoro ? 'ابدأ التركيز' : 'ابدأ المؤقت',
+                child: Text(_pomodoro ? S.startFocus : S.startTimer,
                     style: const TextStyle(
                         fontFamily: 'Raleway',
                         fontSize: 17,

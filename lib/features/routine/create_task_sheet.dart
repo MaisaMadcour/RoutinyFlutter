@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/app_strings.dart';
+import '../../core/database.dart';
 import '../../core/models.dart';
 import '../../core/task_icons.dart';
 import '../../theme/app_colors.dart';
@@ -36,11 +38,13 @@ class _CreateTaskSheet extends StatefulWidget {
 class _CreateTaskSheetState extends State<_CreateTaskSheet> {
   final _titleCtrl = TextEditingController();
   final _subCtrls = <TextEditingController>[];
+  final _subFocusNodes = <FocusNode>[];
   String _iconId = 'star';
   int _colorIndex = 0;
   TimeOfDay? _time;
   bool _reminder = false;
   String? _error;
+  final Set<int> _selectedDays = {}; // Dart weekdays: 1=Mon..7=Sun
 
   bool get _isEdit => widget.edit != null;
 
@@ -56,6 +60,7 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
       _colorIndex = idx < 0 ? 0 : idx;
       for (final s in e.subTasks) {
         _subCtrls.add(TextEditingController(text: s));
+        _subFocusNodes.add(FocusNode());
       }
       if (e.time.contains(':')) {
         final p = e.time.split(':');
@@ -70,20 +75,19 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
   @override
   void dispose() {
     _titleCtrl.dispose();
-    for (final c in _subCtrls) {
-      c.dispose();
-    }
+    for (final c in _subCtrls) c.dispose();
+    for (final f in _subFocusNodes) f.dispose();
     super.dispose();
   }
 
   void _submit() {
     final title = _titleCtrl.text.trim();
     if (title.isEmpty) {
-      setState(() => _error = 'الرجاء إدخال عنوان المهمة');
+      setState(() => _error = S.taskTitleEmpty);
       return;
     }
     if (title.length > 15) {
-      setState(() => _error = 'الحد الأقصى 15 حرف');
+      setState(() => _error = S.taskTitleTooLong);
       return;
     }
     final subs = _subCtrls
@@ -103,8 +107,43 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
       ..subTasks = subs
       ..time = timeStr
       ..hasReminder = _reminder;
-    if (!_isEdit) task.date = todayYmd();
-    Navigator.pop(context, task);
+    if (!_isEdit) {
+      if (_selectedDays.isEmpty) {
+        task.date = todayYmd();
+        Navigator.pop(context, task);
+      } else if (_selectedDays.length == 7) {
+        task.date = '';
+        Navigator.pop(context, task);
+      } else {
+        _insertMultiDayTasks(task);
+        return;
+      }
+    } else {
+      Navigator.pop(context, task);
+    }
+  }
+
+  Future<void> _insertMultiDayTasks(TaskEntity template) async {
+    for (final weekday in _selectedDays) {
+      var d = DateTime.now();
+      while (d.weekday != weekday) {
+        d = d.add(const Duration(days: 1));
+      }
+      for (var i = 0; i < 52; i++) {
+        final t = TaskEntity(
+          title: template.title,
+          iconResName: template.iconResName,
+          colorHex: template.colorHex,
+          subTasks: List.from(template.subTasks),
+          date: '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}',
+          time: template.time,
+          hasReminder: template.hasReminder,
+        );
+        await AppDatabase.instance.insertTask(t);
+        d = d.add(const Duration(days: 7));
+      }
+    }
+    if (mounted) Navigator.pop(context, null);
   }
 
   Future<void> _pickTime() async {
@@ -113,7 +152,23 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
       initialTime: _time ?? const TimeOfDay(hour: 8, minute: 0),
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
-          colorScheme: const ColorScheme.light(primary: AppColors.primary),
+          colorScheme: const ColorScheme.light(
+            primary: AppColors.primary,
+            onPrimary: Colors.white,
+            surface: AppColors.routinyBg,
+            onSurface: AppColors.deepChocolate,
+            secondary: AppColors.primary,
+            onSecondary: Colors.white,
+            primaryContainer: AppColors.primary,
+            onPrimaryContainer: Colors.white,
+            secondaryContainer: AppColors.secondary,
+            onSecondaryContainer: AppColors.deepChocolate,
+            tertiary: AppColors.primary,
+          ),
+          textButtonTheme: TextButtonThemeData(
+            style: TextButton.styleFrom(
+                foregroundColor: AppColors.primary),
+          ),
         ),
         child: child!,
       ),
@@ -123,8 +178,8 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
 
   void _toggleReminder(bool v) {
     if (v && _time == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('اختر وقتًا أولًا من خانة الوقت')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(S.chooseTimeFirst)));
       return;
     }
     setState(() => _reminder = v);
@@ -360,7 +415,12 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: GestureDetector(
-        onTap: () => setState(() => _subCtrls.add(TextEditingController())),
+        onTap: () {
+          final fn = FocusNode();
+          _subFocusNodes.add(fn);
+          setState(() => _subCtrls.add(TextEditingController()));
+          WidgetsBinding.instance.addPostFrameCallback((_) => fn.requestFocus());
+        },
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 12),
@@ -404,6 +464,7 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
                   Expanded(
                     child: TextField(
                       controller: _subCtrls[i],
+                      focusNode: i < _subFocusNodes.length ? _subFocusNodes[i] : null,
                       maxLines: 1,
                       style: const TextStyle(
                           fontFamily: 'Raleway',
@@ -463,7 +524,7 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
                   ),
                   Text(
                     _time == null
-                        ? 'في أي وقت'
+                        ? S.anyTime
                         : '${_time!.hour.toString().padLeft(2, '0')}:${_time!.minute.toString().padLeft(2, '0')}',
                     style: TextStyle(
                         fontFamily: 'Raleway',
@@ -475,6 +536,11 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
                 ],
               ),
             ),
+          ),
+          const Divider(height: 0.5, color: Color(0xDDBA9A89)),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+            child: _recurrenceRow(),
           ),
           const Divider(height: 0.5, color: Color(0xDDBA9A89)),
           SizedBox(
@@ -494,13 +560,102 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
                 Switch(
                   value: _reminder,
                   activeThumbColor: Colors.white,
-                  activeTrackColor: AppColors.ribbonNeutral,
+                  activeTrackColor: AppColors.primary,
+                  inactiveTrackColor: AppColors.navRipple,
+                  inactiveThumbColor: AppColors.ribbonNeutral,
                   onChanged: _toggleReminder,
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // ── Recurrence helpers ──────────────────────────────────────────
+
+  Widget _recurrenceRow() {
+    const days = [
+      (7, 'أحد'),
+      (1, 'اثنين'),
+      (2, 'ثلاثاء'),
+      (3, 'أربعاء'),
+      (4, 'خميس'),
+      (5, 'جمعة'),
+      (6, 'سبت'),
+    ];
+    final allSelected = _selectedDays.length == 7;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.repeat, size: 22, color: AppColors.deepChocolate),
+              const SizedBox(width: 12),
+              const Text('التكرار',
+                  style: TextStyle(
+                      fontFamily: 'Raleway',
+                      fontSize: 14,
+                      color: AppColors.deepChocolate)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              // يومياً chip
+              GestureDetector(
+                onTap: () => setState(() {
+                  if (allSelected) {
+                    _selectedDays.clear();
+                  } else {
+                    _selectedDays.addAll([1, 2, 3, 4, 5, 6, 7]);
+                  }
+                }),
+                child: _dayChip('يومياً', allSelected),
+              ),
+              // individual day chips
+              for (final d in days)
+                GestureDetector(
+                  onTap: () => setState(() {
+                    if (_selectedDays.contains(d.$1)) {
+                      _selectedDays.remove(d.$1);
+                    } else {
+                      _selectedDays.add(d.$1);
+                    }
+                  }),
+                  child: _dayChip(d.$2, _selectedDays.contains(d.$1)),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _dayChip(String label, bool selected) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: BoxDecoration(
+        color: selected ? AppColors.primary : AppColors.routinyBg,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: selected ? AppColors.primary : const Color(0xDDBA9A89),
+        ),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontFamily: 'Raleway',
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: selected ? Colors.white : AppColors.deepChocolate,
+        ),
       ),
     );
   }

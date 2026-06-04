@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
+import '../../core/ads/interstitial_manager.dart';
 import '../../theme/app_colors.dart';
 
 class FocusResultScreen extends StatefulWidget {
@@ -22,6 +23,10 @@ class _FocusResultScreenState extends State<FocusResultScreen> {
         if (mounted) setState(() => _confetti = true);
       });
     }
+    // interstitial after a focus session (cap 3 min)
+    Future.delayed(const Duration(milliseconds: 700), () {
+      InterstitialManager.instance.showIfReady(InterstitialManager.ctxFocusEnd);
+    });
   }
 
   @override

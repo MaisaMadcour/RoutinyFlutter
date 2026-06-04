@@ -65,7 +65,7 @@ class AppDatabase {
     final rows = await d.query('routiny_tasks',
         where: "date = ? OR date = ''",
         whereArgs: [date],
-        orderBy: 'id ASC');
+        orderBy: 'id DESC');
     return rows.map(TaskEntity.fromMap).toList();
   }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/app_strings.dart';
 import '../../core/ar_dates.dart';
 import '../../theme/app_colors.dart';
 import 'water_glass.dart';
@@ -22,8 +23,8 @@ class _WaterTrackerScreenState extends State<WaterTrackerScreen> {
           before < WaterPrefs.goalMl && WaterPrefs.todayMl >= WaterPrefs.goalMl;
       setState(() {});
       if (crossed) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('🎉 كمّلتي الهدف! تستاهلي 💗')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(S.waterGoalReached)));
       }
     });
   }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../core/app_strings.dart';
 import '../../core/database.dart';
+import '../../core/lang_notifier.dart';
 import '../../core/prefs.dart';
 import '../../theme/app_colors.dart';
 import '../care/breathing_exercise_screen.dart';
@@ -40,8 +42,9 @@ class SettingsPage extends StatelessWidget {
                           MaterialPageRoute(
                               builder: (_) => const NotificationsPage()))),
                   _divider(),
-                  _row(context, Icons.translate, AppColors.primary, 'اللغة',
-                      () {}),
+                  _rowWithSub(context, Icons.translate, AppColors.primary,
+                      'اللغة', S.currentLanguage,
+                      () => _showLanguagePicker(context)),
                   _divider(),
                   _row(context, Icons.format_quote, AppColors.primary,
                       'كوتة اليوم', () => showQuoteTodayDialog(context)),
@@ -127,6 +130,104 @@ class SettingsPage extends StatelessWidget {
 
   Widget _divider() => const Divider(
       height: 1, indent: 56, endIndent: 16, color: Color(0x1F5C3D2E));
+
+  Widget _rowWithSub(BuildContext context, IconData icon, Color tint,
+      String label, String subtitle, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Icon(icon, color: tint, size: 22),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label,
+                      style: const TextStyle(
+                          fontFamily: 'Raleway',
+                          fontSize: 15,
+                          color: AppColors.deepChocolate)),
+                  Text(subtitle,
+                      style: const TextStyle(
+                          fontFamily: 'Raleway',
+                          fontSize: 12,
+                          color: AppColors.secondaryText)),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_left, color: AppColors.deepChocolate),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showLanguagePicker(BuildContext context) {
+    final current = LangNotifier.instance.value;
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.routinyBg,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, refresh) => Padding(
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text(S.languagePickerTitle,
+                style: const TextStyle(
+                    fontFamily: 'Raleway',
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.deepChocolate)),
+            const SizedBox(height: 16),
+            _langOption(context, S.langMasri, 'masri', current),
+            const SizedBox(height: 8),
+            _langOption(context, S.langFusha, 'fusha', current),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  Widget _langOption(
+      BuildContext context, String label, String code, String current) {
+    final selected = current == code;
+    return GestureDetector(
+      onTap: () {
+        LangNotifier.instance.setLang(code);
+        Navigator.pop(context);
+      },
+      child: Container(
+        width: double.infinity,
+        padding:
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: selected
+              ? AppColors.primary.withValues(alpha: 0.12)
+              : AppColors.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+              color: selected ? AppColors.primary : Colors.transparent,
+              width: 2),
+        ),
+        child: Row(children: [
+          Expanded(
+              child: Text(label,
+                  style: const TextStyle(
+                      fontFamily: 'Raleway',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.deepChocolate))),
+          if (selected)
+            const Icon(Icons.check_circle,
+                color: AppColors.primary, size: 22),
+        ]),
+      ),
+    );
+  }
 
   Widget _row(BuildContext context, IconData icon, Color tint, String label,
       VoidCallback onTap,
