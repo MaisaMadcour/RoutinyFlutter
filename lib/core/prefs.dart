@@ -15,7 +15,9 @@ class Prefs {
   bool getBool(String k, [bool def = false]) => _sp.getBool(k) ?? def;
   int getInt(String k, [int def = 0]) => _sp.getInt(k) ?? def;
   String? getString(String k) => _sp.getString(k);
-  List<String> getList(String k) => _sp.getStringList(k) ?? [];
+  // Return a *modifiable* copy — SharedPreferences may hand back a
+  // fixed-length/unmodifiable list, and callers do `..add()` / `removeLast()`.
+  List<String> getList(String k) => List<String>.from(_sp.getStringList(k) ?? const []);
 
   Future<void> setBool(String k, bool v) => _sp.setBool(k, v);
   Future<void> setInt(String k, int v) => _sp.setInt(k, v);

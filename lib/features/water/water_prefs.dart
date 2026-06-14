@@ -33,19 +33,24 @@ class WaterPrefs {
 
   static int get todayMl => mlForDate(DateTime.now());
 
+  static String _mlKey() => 'water_ml_${ymd(DateTime.now())}';
+  static String _lastKey() => 'water_last_${ymd(DateTime.now())}';
+
+  /// Adds [ml] to today's total and remembers it as the last amount
+  /// (mirrors Android WaterPrefs.addMl + LAST_AMOUNT).
   static Future<void> addMl(int ml) async {
-    final key = 'water_ml_${ymd(DateTime.now())}';
-    await Prefs.I.setInt(key, Prefs.I.getInt(key, 0) + ml);
-    await Prefs.I.setInt('water_last_${ymd(DateTime.now())}', ml);
+    final mlKey = _mlKey();
+    await Prefs.I.setInt(mlKey, (Prefs.I.getInt(mlKey, 0) + ml).clamp(0, 1 << 30));
+    await Prefs.I.setInt(_lastKey(), ml);
   }
 
+  /// Removes the last added amount — or one cup if none recorded — then
+  /// clears the marker so a repeated undo falls back to a cup (matches Kotlin).
   static Future<void> undoLast() async {
-    final lastKey = 'water_last_${ymd(DateTime.now())}';
-    final last = Prefs.I.getInt(lastKey, 0);
-    if (last == 0) return;
-    final key = 'water_ml_${ymd(DateTime.now())}';
-    await Prefs.I.setInt(key, (Prefs.I.getInt(key, 0) - last).clamp(0, 1 << 30));
-    await Prefs.I.setInt(lastKey, 0);
+    final last = Prefs.I.getInt(_lastKey(), cupSizeMl);
+    final mlKey = _mlKey();
+    await Prefs.I.setInt(mlKey, (Prefs.I.getInt(mlKey, 0) - last).clamp(0, 1 << 30));
+    await Prefs.I.remove(_lastKey());
   }
 
   static int get goalMl => dailyGoal * cupSizeMl;

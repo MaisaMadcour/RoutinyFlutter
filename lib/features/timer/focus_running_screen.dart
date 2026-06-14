@@ -31,8 +31,14 @@ class FocusRunningScreen extends StatefulWidget {
   State<FocusRunningScreen> createState() => _FocusRunningScreenState();
 }
 
-class _FocusRunningScreenState extends State<FocusRunningScreen> {
+class _FocusRunningScreenState extends State<FocusRunningScreen>
+    with WidgetsBindingObserver {
   late int _remaining; // seconds
+  // Absolute wall-clock end of the current phase (ms). The countdown is
+  // derived from this, so locking the screen / suspending the engine never
+  // loses time — on resume we just recompute from the real clock.
+  int _phaseEndMs = 0;
+  bool _finished = false;
   int _currentPomodoro = 1;
   bool _onBreak = false;
   bool _flip = false;
@@ -42,41 +48,71 @@ class _FocusRunningScreenState extends State<FocusRunningScreen> {
   late int _sessionStart;
   final _audio = CalmAudioPlayer();
 
+  int get _nowMs => DateTime.now().millisecondsSinceEpoch;
+  // The final focus phase = last pomodoro, not on a break.
+  bool get _isFinalPhase =>
+      !_onBreak && _currentPomodoro >= widget.totalPomodoros;
+
   @override
   void initState() {
     super.initState();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    WidgetsBinding.instance.addObserver(this);
     _sessionStart = DateTime.now().millisecondsSinceEpoch;
     _remaining = widget.focusMinutes * 60;
+    _phaseEndMs = _nowMs + _remaining * 1000;
     _startTicker();
+    // tapping "stop" on the notification ends the in-app session too
+    FocusNotification.onStoppedFromNotification = () {
+      if (mounted && !_finished) _finish(completed: false);
+    };
     // start the persistent foreground notification (lock screen + status bar)
     FocusNotification.start(
       minutes: widget.focusMinutes,
       taskTitle: widget.taskTitle,
       pomodoroNumber: _currentPomodoro,
+      isPomodoro: widget.isPomodoro,
+      isFinalPhase: _isFinalPhase,
     );
   }
 
   void _startTicker() {
     _ticker?.cancel();
-    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (_remaining <= 0) {
-        _onPhaseComplete();
-      } else {
-        setState(() => _remaining--);
-      }
-    });
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
+  }
+
+  // Recompute remaining from the wall clock — robust across lock/suspend.
+  void _tick() {
+    if (_finished) return;
+    var left = ((_phaseEndMs - _nowMs) / 1000).ceil();
+    // Catch up any phases that elapsed while the engine was suspended.
+    while (left <= 0 && !_finished) {
+      _onPhaseComplete();
+      if (_finished) return;
+      left = ((_phaseEndMs - _nowMs) / 1000).ceil();
+    }
+    setState(() => _remaining = left < 0 ? 0 : left);
+  }
+
+  // Resync the instant the app comes back to the foreground.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _tick();
+  }
+
+  void _beginPhase(int seconds) {
+    _remaining = seconds;
+    _phaseEndMs = _nowMs + seconds * 1000;
+    setState(() {});
+    _syncNotification();
   }
 
   void _onPhaseComplete() {
     if (_onBreak) {
       // break finished -> next focus
-      setState(() {
-        _onBreak = false;
-        _currentPomodoro++;
-        _remaining = widget.focusMinutes * 60;
-      });
-      _syncNotification();
+      _onBreak = false;
+      _currentPomodoro++;
+      _beginPhase(widget.focusMinutes * 60);
       return;
     }
     // focus finished
@@ -85,17 +121,12 @@ class _FocusRunningScreenState extends State<FocusRunningScreen> {
       return;
     }
     if (widget.breakMinutes > 0) {
-      setState(() {
-        _onBreak = true;
-        _remaining = widget.breakMinutes * 60;
-      });
+      _onBreak = true;
+      _beginPhase(widget.breakMinutes * 60);
     } else {
-      setState(() {
-        _currentPomodoro++;
-        _remaining = widget.focusMinutes * 60;
-      });
+      _currentPomodoro++;
+      _beginPhase(widget.focusMinutes * 60);
     }
-    _syncNotification();
   }
 
   void _syncNotification() {
@@ -103,13 +134,22 @@ class _FocusRunningScreenState extends State<FocusRunningScreen> {
       seconds: _remaining,
       taskTitle: _onBreak ? 'استراحة' : widget.taskTitle,
       pomodoroNumber: _currentPomodoro,
+      isPomodoro: widget.isPomodoro,
+      isFinalPhase: _isFinalPhase,
     );
   }
 
   Future<void> _finish({required bool completed}) async {
+    if (_finished) return;
+    _finished = true;
     _ticker?.cancel();
     _holdTimer?.cancel();
-    await FocusNotification.stop();
+    // Natural finish → heads-up "time's up" alert; manual stop → silent.
+    if (completed) {
+      await FocusNotification.complete(isPomodoro: widget.isPomodoro);
+    } else {
+      await FocusNotification.stop();
+    }
     await _audio.stop();
     final now = DateTime.now().millisecondsSinceEpoch;
     final planned = widget.focusMinutes * 60;
@@ -162,10 +202,13 @@ class _FocusRunningScreenState extends State<FocusRunningScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    FocusNotification.onStoppedFromNotification = null;
     _ticker?.cancel();
     _holdTimer?.cancel();
     _audio.dispose();
-    FocusNotification.stop();
+    // If the user left without finishing, clear the service (no alert).
+    if (!_finished) FocusNotification.stop();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
   }
@@ -198,7 +241,13 @@ class _FocusRunningScreenState extends State<FocusRunningScreen> {
                     _openSounds,
                   ),
                   const SizedBox(height: 10),
-                  _topBtn(Icons.fullscreen, const Color(0xFF9C8B7F),
+                  _topBtn(
+                      _flip
+                          ? Icons.screen_lock_portrait
+                          : Icons.screen_rotation,
+                      _flip
+                          ? const Color(0xFFE8607E)
+                          : const Color(0xFF9C8B7F),
                       () => setState(() => _flip = !_flip)),
                 ],
               ),
@@ -301,8 +350,9 @@ class _FocusRunningScreenState extends State<FocusRunningScreen> {
   }
 
   Widget _clock(String mm, String ss, {bool big = false}) {
-    final size = big ? 130.0 : 84.0;
-    final colonSize = big ? 116.0 : 74.0;
+    // when rotated 90° the digits span the screen *height*, so they can grow a lot
+    final size = big ? 150.0 : 84.0;
+    final colonSize = big ? 130.0 : 74.0;
     TextStyle digit(Color c) => TextStyle(
           fontFamily: 'Montserrat',
           fontSize: size,

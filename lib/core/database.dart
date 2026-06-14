@@ -134,6 +134,22 @@ class AppDatabase {
     return rows.map(ReflectionEntity.fromMap).toList();
   }
 
+  /// Saved journal entries only (مذكراتي) — reflections with kept text.
+  Future<List<ReflectionEntity>> journalEntries() async {
+    final d = await db;
+    final rows = await d.query('reflections',
+        where: "journal IS NOT NULL AND journal != ''",
+        orderBy: 'timestamp DESC');
+    return rows.map(ReflectionEntity.fromMap).toList();
+  }
+
+  Future<void> deleteReflectionJournal(int id) async {
+    final d = await db;
+    // keep the mood/feelings stats, just drop the kept text
+    await d.update('reflections', {'journal': null},
+        where: 'id = ?', whereArgs: [id]);
+  }
+
   Future<void> clearAll() async {
     final d = await db;
     await d.delete('routiny_tasks');

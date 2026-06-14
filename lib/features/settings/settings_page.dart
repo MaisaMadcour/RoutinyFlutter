@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../core/app_strings.dart';
 import '../../core/database.dart';
-import '../../core/lang_notifier.dart';
 import '../../core/prefs.dart';
 import '../../theme/app_colors.dart';
 import '../care/breathing_exercise_screen.dart';
@@ -13,6 +11,12 @@ import '../profile/profile_page.dart';
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
 
+  // 1:1 with the Kotlin settings palette
+  static const _ink = Color(0xFF5C3D2E);      // row title / chevron
+  static const _muted = Color(0xFF8E7366);    // section label / version
+  static const _danger = Color(0xFFC25C5C);   // clear-data row
+  static const _divider = Color(0x1F5C3D2E);  // 12% chocolate hairline
+
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
@@ -22,57 +26,59 @@ class SettingsPage extends StatelessWidget {
           _header(),
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(18, 18, 18, 120),
+              padding: const EdgeInsets.only(bottom: 120),
               children: [
+                // ── الحساب ──
                 _sectionLabel('الحساب'),
-                _card([
-                  _row(context, Icons.account_circle, AppColors.primary,
-                      'تعديل الملف الشخصي',
-                      () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const ProfilePage()))),
-                ]),
+                _row(context,
+                    icon: Icons.account_circle,
+                    title: 'تعديل الملف الشخصي',
+                    onTap: () => Navigator.push(context,
+                        MaterialPageRoute(builder: (_) => const ProfilePage()))),
+
+                // ── التطبيق ──
                 _sectionLabel('التطبيق'),
-                _card([
-                  _row(context, Icons.notifications, AppColors.primary,
-                      'الإشعارات',
-                      () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const NotificationsPage()))),
-                  _divider(),
-                  _rowWithSub(context, Icons.translate, AppColors.primary,
-                      'اللغة', S.currentLanguage,
-                      () => _showLanguagePicker(context)),
-                  _divider(),
-                  _row(context, Icons.format_quote, AppColors.primary,
-                      'كوتة اليوم', () => showQuoteTodayDialog(context)),
-                  _divider(),
-                  _row(context, Icons.self_improvement, AppColors.primary,
-                      'تمرين تنفّس',
-                      () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) =>
-                                  const BreathingExerciseScreen()))),
-                ]),
+                _row(context,
+                    icon: Icons.notifications,
+                    title: 'الإشعارات',
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const NotificationsPage()))),
+                _hairline(),
+                _row(context,
+                    icon: Icons.format_quote,
+                    title: 'كوتة اليوم',
+                    onTap: () => showQuoteTodayDialog(context)),
+                _hairline(),
+                _row(context,
+                    icon: Icons.self_improvement,
+                    title: 'تمرين تنفّس',
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const BreathingExerciseScreen()))),
+
+                // ── المساعدة والتعليقات ──
                 _sectionLabel('المساعدة والتعليقات'),
-                _card([
-                  _row(context, Icons.thumb_up, AppColors.primary, 'قيّمينا',
-                      () => _showRate(context)),
-                  _divider(),
-                  _row(context, Icons.delete_forever, AppColors.danger,
-                      'مسح جميع البيانات', () => _showClear(context),
-                      danger: true),
-                ]),
+                _row(context,
+                    icon: Icons.thumb_up,
+                    title: 'قيّمينا',
+                    onTap: () => _showRate(context)),
+                _hairline(),
+                _row(context,
+                    icon: Icons.delete_forever,
+                    title: 'مسح جميع البيانات',
+                    danger: true,
+                    onTap: () => _showClear(context)),
+
                 const SizedBox(height: 22),
                 const Center(
                   child: Text('v1.0',
                       style: TextStyle(
                           fontFamily: 'Raleway',
                           fontSize: 13,
-                          color: AppColors.secondaryText)),
+                          color: _muted)),
                 ),
               ],
             ),
@@ -82,180 +88,89 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
+  // ── curved header with a soft drop shadow (same colour as the page) ──
   Widget _header() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.only(top: 36, bottom: 22),
       decoration: const BoxDecoration(
-        color: AppColors.routinyBg,
+        color: AppColors.background,
+        borderRadius:
+            BorderRadius.vertical(bottom: Radius.circular(32)),
         boxShadow: [
-          BoxShadow(color: Color(0x14000000), blurRadius: 8, offset: Offset(0, 3)),
+          BoxShadow(
+              color: Color(0x1F000000), blurRadius: 10, offset: Offset(0, 4)),
         ],
       ),
       child: const SafeArea(
         bottom: false,
-        child: Center(
-          child: Text('الإعدادات',
-              style: TextStyle(
-                  fontFamily: 'Raleway',
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.deepChocolate)),
+        child: Padding(
+          padding: EdgeInsets.only(top: 10, bottom: 22),
+          child: Center(
+            child: Text('الإعدادات',
+                style: TextStyle(
+                    fontFamily: 'Raleway',
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: _ink)),
+          ),
         ),
       ),
     );
   }
 
+  // ── right-aligned section label ──
   Widget _sectionLabel(String text) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 18, 4, 8),
-      child: Text(text,
-          style: const TextStyle(
-              fontFamily: 'Raleway',
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: AppColors.secondaryText)),
-    );
-  }
-
-  Widget _card(List<Widget> children) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
+      padding: const EdgeInsets.fromLTRB(22, 22, 22, 10),
+      child: Align(
+        alignment: AlignmentDirectional.centerEnd,
+        child: Text(text,
+            style: const TextStyle(
+                fontFamily: 'Raleway',
+                fontSize: 14,
+                color: _muted)),
       ),
-      child: Column(children: children),
     );
   }
 
-  Widget _divider() => const Divider(
-      height: 1, indent: 56, endIndent: 16, color: Color(0x1F5C3D2E));
-
-  Widget _rowWithSub(BuildContext context, IconData icon, Color tint,
-      String label, String subtitle, VoidCallback onTap) {
+  // ── flat row: icon + title + chevron ──
+  Widget _row(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    bool danger = false,
+  }) {
+    final color = danger ? _danger : _ink;
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
         child: Row(
           children: [
-            Icon(icon, color: tint, size: 22),
+            Icon(icon, size: 22, color: danger ? _danger : AppColors.primary),
             const SizedBox(width: 14),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(label,
-                      style: const TextStyle(
-                          fontFamily: 'Raleway',
-                          fontSize: 15,
-                          color: AppColors.deepChocolate)),
-                  Text(subtitle,
-                      style: const TextStyle(
-                          fontFamily: 'Raleway',
-                          fontSize: 12,
-                          color: AppColors.secondaryText)),
-                ],
-              ),
-            ),
-            const Icon(Icons.chevron_left, color: AppColors.deepChocolate),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showLanguagePicker(BuildContext context) {
-    final current = LangNotifier.instance.value;
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: AppColors.routinyBg,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (_) => StatefulBuilder(
-        builder: (ctx, refresh) => Padding(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Text(S.languagePickerTitle,
-                style: const TextStyle(
-                    fontFamily: 'Raleway',
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.deepChocolate)),
-            const SizedBox(height: 16),
-            _langOption(context, S.langMasri, 'masri', current),
-            const SizedBox(height: 8),
-            _langOption(context, S.langFusha, 'fusha', current),
-          ]),
-        ),
-      ),
-    );
-  }
-
-  Widget _langOption(
-      BuildContext context, String label, String code, String current) {
-    final selected = current == code;
-    return GestureDetector(
-      onTap: () {
-        LangNotifier.instance.setLang(code);
-        Navigator.pop(context);
-      },
-      child: Container(
-        width: double.infinity,
-        padding:
-            const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        decoration: BoxDecoration(
-          color: selected
-              ? AppColors.primary.withValues(alpha: 0.12)
-              : AppColors.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-              color: selected ? AppColors.primary : Colors.transparent,
-              width: 2),
-        ),
-        child: Row(children: [
-          Expanded(
-              child: Text(label,
-                  style: const TextStyle(
-                      fontFamily: 'Raleway',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.deepChocolate))),
-          if (selected)
-            const Icon(Icons.check_circle,
-                color: AppColors.primary, size: 22),
-        ]),
-      ),
-    );
-  }
-
-  Widget _row(BuildContext context, IconData icon, Color tint, String label,
-      VoidCallback onTap,
-      {bool danger = false}) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        child: Row(
-          children: [
-            Icon(icon, color: tint, size: 22),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(label,
+              child: Text(title,
+                  textAlign: TextAlign.right,
                   style: TextStyle(
                       fontFamily: 'Raleway',
-                      fontSize: 15,
-                      color: danger
-                          ? AppColors.danger
-                          : AppColors.deepChocolate)),
+                      fontSize: 17,
+                      color: color)),
             ),
-            Icon(Icons.chevron_left,
-                color: danger ? AppColors.danger : AppColors.deepChocolate),
+            Icon(Icons.chevron_left, size: 20, color: color),
           ],
         ),
       ),
     );
   }
+
+  Widget _hairline() => const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 22),
+        child: Divider(height: 1, thickness: 1, color: _divider),
+      );
+
+  // ───────────────────────── dialogs / sheets ─────────────────────────
 
   void _showRate(BuildContext context) {
     showDialog<void>(
@@ -355,8 +270,7 @@ class SettingsPage extends StatelessWidget {
                     if (!context.mounted) return;
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('تم مسح كل البيانات')));
+                        const SnackBar(content: Text('تم مسح كل البيانات')));
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.danger,

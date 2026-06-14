@@ -69,10 +69,12 @@ class _CarePageState extends State<CarePage> {
               ),
             ],
           ),
-          // Water glass — 2 px above the bottom navigation bar
-          Positioned(
-            right: 16,
-            bottom: bottomPad + 70 + 2,
+          // Water glass — sits directly above the bottom nav bar (the care
+          // body ends at the nav, so a small bottom gap places it just above
+          // the bar, matching the Kotlin WaterCupFab placement).
+          PositionedDirectional(
+            end: 8,
+            bottom: 12,
             child: GestureDetector(
               onTap: () async {
                 await Navigator.push(
@@ -85,11 +87,12 @@ class _CarePageState extends State<CarePage> {
                 width: 68,
                 height: 82,
                 child: WaterGlass(
+                  // water height = exactly (added ÷ goal); no baseline floor
                   progress: WaterPrefs.goalMl == 0
                       ? 0
                       : (WaterPrefs.todayMl / WaterPrefs.goalMl)
                           .clamp(0.0, 1.0),
-                  baseline: 0.35,
+                  baseline: 0.0,
                   strokeWidth: 4,
                 ),
               ),
@@ -105,8 +108,8 @@ class _CarePageState extends State<CarePage> {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: AppColors.routinyBg,
-        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(22)),
+        color: const Color(0xFFFBE8DA),
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
         boxShadow: [
           BoxShadow(
               color: const Color(0x1A000000),

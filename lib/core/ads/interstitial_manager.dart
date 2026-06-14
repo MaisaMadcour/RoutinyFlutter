@@ -12,12 +12,14 @@ class InterstitialManager {
   // ─── contexts + caps ───
   static const ctxFocusEnd = 'focus_end';
   static const ctxTestResult = 'test_result';
+  static const ctxReflectionResult = 'reflection_result';
   static const ctxArticleClose = 'article_close';
   static const ctxSupport = 'support_us';
 
   static const _caps = <String, Duration>{
     ctxFocusEnd: Duration(minutes: 3),
     ctxTestResult: Duration(minutes: 5),
+    ctxReflectionResult: Duration(minutes: 5),
     ctxArticleClose: Duration(minutes: 3),
     ctxSupport: Duration.zero,
   };

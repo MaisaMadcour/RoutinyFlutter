@@ -56,12 +56,10 @@ class S {
       isFusha ? 'كيف تشعرين اليوم' : 'حاسة بإيه النهاردة';
   static String get feelingsQuestion =>
       isFusha ? 'كيف تصفين شعورك اليوم؟' : 'كيف تصفي شعورك اليوم؟';
-  static String get feelingsHint =>
-      isFusha ? 'اختاري واحداً على الأقل (حتى 3)' : 'اختاري واحد على الأقل (حتى 3)';
+  static String get feelingsHint => 'اختاري 3';
   static String get influencesQuestion =>
       isFusha ? 'ما الذي يؤثر فيكِ اليوم؟' : 'إيه اللي مؤثّر عليكي اليوم؟';
-  static String get influencesHint =>
-      isFusha ? 'اختاري واحداً على الأقل (حتى 3)' : 'اختاري واحد على الأقل (حتى 3)';
+  static String get influencesHint => 'اختاري 3';
   static String get journalQuestion =>
       isFusha ? 'هل تريدين التعبير عن مشاعرك؟ ✍️' : 'عايزة تزيحيها عن صدرك؟ ✍️';
   static String get journalSubtitle =>

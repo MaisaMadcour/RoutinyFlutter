@@ -71,29 +71,35 @@ class _WaterTrackerScreenState extends State<WaterTrackerScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+        child: Column(
           children: [
-            Row(
-              children: [
-                GestureDetector(
-                  onTap: () async {
-                    await showWaterSettings(context);
-                    setState(() {});
-                  },
-                  child: const Icon(Icons.settings_outlined,
-                      color: AppColors.deepChocolate),
-                ),
-                const Spacer(),
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: const Icon(Icons.arrow_forward,
-                      color: AppColors.deepChocolate),
-                ),
-              ],
+            // ── fixed header: settings (right) + back (left) ──
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 10, 20, 4),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () async {
+                      await showWaterSettings(context);
+                      if (mounted) setState(() {});
+                    },
+                    child: const Icon(Icons.settings_outlined,
+                        size: 26, color: AppColors.deepChocolate),
+                  ),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: const Icon(Icons.arrow_back,
+                        size: 26, color: AppColors.deepChocolate),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 8),
-            const Center(
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+                children: [
+                  const Center(
               child: Text('شرب الميّة 💧',
                   style: TextStyle(
                       fontFamily: 'Raleway',
@@ -109,10 +115,12 @@ class _WaterTrackerScreenState extends State<WaterTrackerScreen> {
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    WaterGlass(
-                      progress:
-                          goalMl == 0 ? 0 : (ml / goalMl).clamp(0.0, 1.0),
-                      baseline: 0.5,
+                    Positioned.fill(
+                      child: WaterGlass(
+                        progress:
+                            goalMl == 0 ? 0 : (ml / goalMl).clamp(0.0, 1.0),
+                        baseline: 0.0, // empty glass reflects real level
+                      ),
                     ),
                     Column(
                       mainAxisSize: MainAxisSize.min,
@@ -122,12 +130,17 @@ class _WaterTrackerScreenState extends State<WaterTrackerScreen> {
                                 fontFamily: 'Raleway',
                                 fontSize: 64,
                                 fontWeight: FontWeight.w700,
-                                color: Colors.white)),
+                                color: AppColors.deepChocolate,
+                                shadows: [
+                                  Shadow(
+                                      color: Color(0x80FFFFFF),
+                                      blurRadius: 8),
+                                ])),
                         Text('من $goal كاسات',
                             style: const TextStyle(
                                 fontFamily: 'Raleway',
                                 fontSize: 14,
-                                color: Colors.white)),
+                                color: AppColors.deepChocolate)),
                       ],
                     ),
                   ],
@@ -197,8 +210,11 @@ class _WaterTrackerScreenState extends State<WaterTrackerScreen> {
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                     color: AppColors.deepChocolate)),
-            const SizedBox(height: 12),
-            _history(),
+                  const SizedBox(height: 12),
+                  _history(),
+                ],
+              ),
+            ),
           ],
         ),
       ),

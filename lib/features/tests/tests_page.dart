@@ -40,9 +40,9 @@ class TestsPage extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.only(top: 28, bottom: 12),
       decoration: BoxDecoration(
-        color: AppColors.routinyBg,
+        color: const Color(0xFFFBE8DA),
         borderRadius:
-            const BorderRadius.vertical(bottom: Radius.circular(22)),
+            const BorderRadius.vertical(bottom: Radius.circular(32)),
         boxShadow: [
           BoxShadow(
               color: const Color(0x1A000000),
@@ -121,7 +121,13 @@ class _TestCardState extends State<_TestCard> {
         decoration: BoxDecoration(
           color: _cardBg,
           borderRadius: BorderRadius.circular(r),
+          // a soft frame in a darker shade of the card's own colour
+          border: Border.all(
+            color: ImagePalette.darken(_cardBg, 0.15),
+            width: 1.5,
+          ),
         ),
+        clipBehavior: Clip.antiAlias,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [

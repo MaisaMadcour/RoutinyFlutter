@@ -32,4 +32,12 @@ class ArDates {
 
   static bool sameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
+
+  /// 12-hour Arabic time, e.g. 17:05 → "5:05 م", 0:30 → "12:30 ص".
+  static String time12h(int hour, int minute) {
+    final period = hour < 12 ? 'ص' : 'م';
+    var h = hour % 12;
+    if (h == 0) h = 12;
+    return '$h:${minute.toString().padLeft(2, '0')} $period';
+  }
 }

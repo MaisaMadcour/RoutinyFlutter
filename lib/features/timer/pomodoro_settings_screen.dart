@@ -57,12 +57,24 @@ class _PomodoroSettingsScreenState extends State<PomodoroSettingsScreen> {
               Center(
                 child: GestureDetector(
                   onTap: _showInfo,
-                  child: const Text('ازاي تعملي تقنية البومودورو؟',
-                      style: TextStyle(
-                          fontFamily: 'Raleway',
-                          fontSize: 15,
-                          color: AppColors.primary,
-                          decoration: TextDecoration.underline)),
+                  // manual underline that sits clearly BELOW the Arabic text
+                  // (TextDecoration.underline renders too high over Arabic)
+                  child: IntrinsicWidth(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('ازاي تعملي تقنية البومودورو؟',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                                fontFamily: 'Raleway',
+                                fontSize: 15,
+                                color: AppColors.primary)),
+                        const SizedBox(height: 4),
+                        Container(height: 1.5, color: AppColors.primary),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ],

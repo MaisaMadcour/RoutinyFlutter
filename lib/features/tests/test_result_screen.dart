@@ -6,11 +6,12 @@ import '../../core/image_palette.dart';
 import '../../core/models.dart';
 import '../../core/routiny_stats.dart';
 import '../../theme/app_colors.dart';
+import 'share_result_card.dart';
 import 'test_intro_screen.dart';
 import 'test_models.dart';
 
 const _kDownloadUrl =
-    'https://play.google.com/store/apps/details?id=com.gpstracker.routiny';
+    'https://play.google.com/store/apps/details?id=com.routiny.app';
 
 class TestResultScreen extends StatefulWidget {
   const TestResultScreen({
@@ -469,8 +470,17 @@ class _TestResultScreenState extends State<TestResultScreen> {
     final text = 'نتيجتي في اختبار "${t.title}":\n'
         '► ${tier.title}\n\n'
         '${tier.details}\n\n'
-        '📲 حمّلي تطبيق Routiny: $_kDownloadUrl';
-    Share.share(text);
+        '📲 حمّلي تطبيق روتيني: $_kDownloadUrl';
+    // story-size image card the user can post to Snap/Insta
+    showShareResultSheet(
+      context,
+      headline: 'نتيجتي في "${t.title}"',
+      resultTitle: tier.title,
+      details: tier.details,
+      coverAsset: _coverAsset,
+      edge: _edge,
+      shareText: text,
+    );
   }
 
   void _challengeFriends() {

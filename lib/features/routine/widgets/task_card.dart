@@ -12,6 +12,7 @@ class TaskCard extends StatefulWidget {
     super.key,
     required this.task,
     required this.position,
+    required this.dateYmd,
     required this.expanded,
     required this.onLongPress,
     required this.onTapWhenExpanded,
@@ -21,6 +22,8 @@ class TaskCard extends StatefulWidget {
 
   final TaskEntity task;
   final int position;
+  // The day this card is showing — checks are stored per day.
+  final String dateYmd;
   final bool expanded;
   final VoidCallback onLongPress;
   final VoidCallback onTapWhenExpanded;
@@ -51,7 +54,8 @@ class _TaskCardState extends State<TaskCard> {
   void didUpdateWidget(TaskCard old) {
     super.didUpdateWidget(old);
     if (old.task.id != widget.task.id ||
-        old.task.subTasks.length != widget.task.subTasks.length) {
+        old.task.subTasks.length != widget.task.subTasks.length ||
+        old.dateYmd != widget.dateYmd) {
       _loadChecks();
     }
   }
@@ -59,7 +63,7 @@ class _TaskCardState extends State<TaskCard> {
   void _loadChecks() {
     _checks = List.generate(
       widget.task.subTasks.length,
-      (i) => RoutinyStats.isSubtaskChecked(widget.task.id, i),
+      (i) => RoutinyStats.isSubtaskChecked(widget.task.id, i, widget.dateYmd),
     );
     _lastAllDone = _allDone;
   }
@@ -70,13 +74,14 @@ class _TaskCardState extends State<TaskCard> {
   Future<void> _toggle(int index) async {
     final v = !_checks[index];
     setState(() => _checks[index] = v);
-    await RoutinyStats.setSubtaskChecked(widget.task.id, index, v);
+    await RoutinyStats.setSubtaskChecked(
+        widget.task.id, index, widget.dateYmd, v);
     final done = _allDone;
     if (done && !_lastAllDone) {
-      await RoutinyStats.recordTaskCompleted(widget.task.id);
+      await RoutinyStats.recordTaskCompleted(widget.task.id, widget.dateYmd);
       setState(() => _confetti = true);
     } else if (!done && _lastAllDone) {
-      await RoutinyStats.unrecordTaskCompleted(widget.task.id);
+      await RoutinyStats.unrecordTaskCompleted(widget.task.id, widget.dateYmd);
     }
     _lastAllDone = done;
   }
@@ -103,8 +108,13 @@ class _TaskCardState extends State<TaskCard> {
                 child: Center(child: _toolbar()),
               ),
             ),
+          // keep the card occupying space even while deleting, so the
+          // overlaid Lottie has a box to fill (otherwise the Stack collapses)
           Visibility(
             visible: !_deleting,
+            maintainSize: true,
+            maintainAnimation: true,
+            maintainState: true,
             child: AnimatedPadding(
               duration: const Duration(milliseconds: 220),
               curve: Curves.easeOut,
@@ -117,6 +127,7 @@ class _TaskCardState extends State<TaskCard> {
               child: Lottie.asset(
                 'assets/lottie/cancel.json',
                 repeat: false,
+                fit: BoxFit.contain,
                 onLoaded: (c) {
                   Future.delayed(c.duration, () {
                     if (mounted) widget.onDelete();
@@ -291,9 +302,13 @@ class _TaskCardState extends State<TaskCard> {
                         fontFamily: 'Raleway',
                         fontSize: 13,
                         color: AppColors.deepChocolate,
+                        // line sits UNDER the Arabic text (line-through renders
+                        // too high over Arabic glyphs in a Latin font).
                         decoration: checked
-                            ? TextDecoration.lineThrough
+                            ? TextDecoration.underline
                             : TextDecoration.none,
+                        decorationColor: AppColors.deepChocolate,
+                        decorationThickness: 1.5,
                       ),
                     ),
                   ),

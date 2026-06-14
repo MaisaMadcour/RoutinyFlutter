@@ -5,6 +5,7 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import 'app.dart';
 import 'core/ads/interstitial_manager.dart';
+import 'core/ads/rewarded_manager.dart';
 import 'core/lang_notifier.dart';
 import 'core/prefs.dart';
 
@@ -31,6 +32,7 @@ Future<void> main() async {
       ),
     );
     InterstitialManager.instance.preload();
+    RewardedManager.instance.preload();
   });
   runApp(const RoutinyApp());
 }

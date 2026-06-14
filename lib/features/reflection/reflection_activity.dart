@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 
+import '../../core/ads/interstitial_manager.dart';
 import '../../core/app_strings.dart';
 import '../../core/database.dart';
 import '../../core/models.dart';
 import '../../core/routiny_stats.dart';
 import '../../theme/app_colors.dart';
 import '../care/breathing_exercise_screen.dart';
+import '../care/care_article_screen.dart';
+import '../care/care_data.dart';
 import '../water/water_tracker_screen.dart';
+import '../tests/share_result_card.dart';
 import 'reflection_models.dart';
 import 'reflection_response.dart';
 
@@ -23,14 +27,25 @@ class _ReflectionActivityState extends State<ReflectionActivity> {
   final Set<String> _feelings = {};
   final Set<String> _influences = {};
   String _journal = '';
+  bool _keepJournal = false; // off by default → entry stays private
   bool _saved = false;
+  bool _routineAdopted = false;
 
   static const _maxPicks = 3;
 
   void _next() {
     if (_step == 0 && _mood == null) return;
-    if (_step == 2 && !_saved) {
-      _save();
+    if (_step == 2) {
+      // moving from the journal step to the result → save + show an
+      // interstitial (cap 5 min) before revealing the reflection result.
+      if (!_saved) _save();
+      InterstitialManager.instance.showIfReady(
+        InterstitialManager.ctxReflectionResult,
+        onDone: () {
+          if (mounted) setState(() => _step = 3);
+        },
+      );
+      return;
     }
     setState(() => _step = (_step + 1).clamp(0, 3));
   }
@@ -50,7 +65,10 @@ class _ReflectionActivityState extends State<ReflectionActivity> {
       mood: _mood ?? 'okay',
       feelings: _feelings.join(','),
       influences: _influences.join(','),
-      journal: _journal.trim().isEmpty ? null : _journal.trim(),
+      // only keep the written text if the user opted in
+      journal: (_keepJournal && _journal.trim().isNotEmpty)
+          ? _journal.trim()
+          : null,
     ));
   }
 
@@ -180,8 +198,11 @@ class _ReflectionActivityState extends State<ReflectionActivity> {
                           ),
                         ),
                         alignment: Alignment.center,
-                        child: Text(m.emoji,
-                            style: const TextStyle(fontSize: 44)),
+                        padding: const EdgeInsets.all(14),
+                        child: Image.asset(
+                          'assets/moods/${m.imageAsset}.png',
+                          fit: BoxFit.contain,
+                        ),
                       ),
                       const SizedBox(height: 6),
                       Text(m.label,
@@ -334,6 +355,39 @@ class _ReflectionActivityState extends State<ReflectionActivity> {
               ),
             ),
           ),
+          const SizedBox(height: 12),
+          // optional: keep this entry in "مذكراتي" (off by default = private)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.calendarDayStroke),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.lock_outline,
+                    size: 18, color: AppColors.primary),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Text('احتفظي بمذكراتي عشان أرجعلها بعدين 🤍',
+                      style: TextStyle(
+                          fontFamily: 'Raleway',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.deepChocolate)),
+                ),
+                Switch(
+                  value: _keepJournal,
+                  activeThumbColor: Colors.white,
+                  activeTrackColor: AppColors.primary,
+                  inactiveTrackColor: AppColors.navRipple,
+                  inactiveThumbColor: AppColors.ribbonNeutral,
+                  onChanged: (v) => setState(() => _keepJournal = v),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 10),
           Text(S.journalSkipHint,
               style: const TextStyle(
@@ -345,32 +399,133 @@ class _ReflectionActivityState extends State<ReflectionActivity> {
     );
   }
 
+  // result-page palette (1:1 with the Kotlin card drawables)
+  static const _darkBtn = Color(0xFF5C3D2E);
+
+  Widget _gradCard({
+    required List<Color> colors,
+    required double radius,
+    required Widget child,
+    EdgeInsets padding = const EdgeInsets.all(14),
+  }) {
+    return Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: colors,
+        ),
+        borderRadius: BorderRadius.circular(radius),
+        border: Border.all(color: const Color(0x33C7745F), width: 1),
+      ),
+      child: child,
+    );
+  }
+
+  // header on the right (RTL): emoji first, then the title
+  Widget _cardHeader(String title, String emoji) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.start, // start = right in RTL
+      children: [
+        Text(emoji, style: const TextStyle(fontSize: 16)),
+        const SizedBox(width: 4),
+        Text(title,
+            style: const TextStyle(
+                fontFamily: 'Raleway',
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: _darkBtn)),
+      ],
+    );
+  }
+
+  (String, String) _splitTrailingEmoji(String line) {
+    final t = line.trim();
+    if (t.isEmpty) return ('💭', t);
+    final chars = t.runes.toList();
+    // grab trailing non-letter symbol cluster as the emoji
+    final last = String.fromCharCode(chars.last);
+    final isLetter = RegExp(r'[؀-ۿ\w]').hasMatch(last);
+    if (isLetter) return ('💭', t);
+    final emoji = last;
+    final text = String.fromCharCodes(chars.sublist(0, chars.length - 1)).trim();
+    return (emoji, text);
+  }
+
+  void _shareReflection(ReflectionResponse r) {
+    const moodEmoji = {
+      'wonderful': '💗',
+      'good': '🤍',
+      'okay': '🌿',
+      'not_good': '🫂',
+      'bad': '💔',
+    };
+    const url = 'https://play.google.com/store/apps/details?id=com.routiny.app';
+    final text = 'انعكاسي النهاردة على روتيني 🌸\n'
+        '${r.empathyTitle}\n\n'
+        '${r.insight}\n\n'
+        '📲 حمّلي روتيني: $url';
+    showShareResultSheet(
+      context,
+      headline: 'حاسة بإيه النهاردة 🌸',
+      resultTitle: r.empathyTitle,
+      details: r.insight,
+      emoji: moodEmoji[_mood] ?? '🌸',
+      edge: const Color(0xFFE8A0A0),
+      shareText: text,
+    );
+  }
+
   Widget _responseStep() {
     final r = generateReflection(_mood ?? 'okay', _feelings, _influences);
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 20),
       children: [
-        _respCard(const Color(0xFFFBE3D9),
-            child: Column(
-              children: [
-                const Text('🤍', style: TextStyle(fontSize: 30)),
-                const SizedBox(height: 8),
-                Text(r.empathyTitle,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                        fontFamily: 'Raleway',
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.deepChocolate)),
-              ],
-            )),
-        _titledCard('✨ وصف يومك', r.dayDescription.join('\n')),
-        _titledCard('💡 لمحة', r.insight),
-        _titledCard('🌿 نصيحة', r.advice),
-        _routineCard(r),
-        _titledCard('💌 رسالة لك', r.supportMessage),
-        _activityCard(r),
+        _heroCard(r),
+        const SizedBox(height: 22),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.start, // start = right in RTL
+          children: const [
+            Text('✨', style: TextStyle(fontSize: 14)),
+            SizedBox(width: 4),
+            Text('وصف يومك',
+                style: TextStyle(
+                    fontFamily: 'Raleway',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: _darkBtn)),
+          ],
+        ),
         const SizedBox(height: 8),
+        _dayDescCard(r),
+        const SizedBox(height: 14),
+        // ── grid: لمحة + نصيحة ──
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: _insightCard(r)),
+              const SizedBox(width: 12),
+              Expanded(child: _adviceCard(r)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        // ── grid: روتين + رسالة لك ──
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: _routineCard(r)),
+              const SizedBox(width: 12),
+              Expanded(child: _supportCard(r)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        _activityCard(r),
+        const SizedBox(height: 18),
         Center(
           child: Text(S.responseRecorded,
               style: const TextStyle(
@@ -378,15 +533,36 @@ class _ReflectionActivityState extends State<ReflectionActivity> {
                   fontSize: 13,
                   color: AppColors.secondaryText)),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
+        // share as a story-size card
+        SizedBox(
+          height: 52,
+          child: OutlinedButton.icon(
+            onPressed: () => _shareReflection(r),
+            icon: const Icon(Icons.ios_share, size: 18, color: _darkBtn),
+            label: const Text('شاركي نتيجتك 📸',
+                style: TextStyle(
+                    fontFamily: 'Raleway',
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: _darkBtn)),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: _darkBtn, width: 1.5),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(100)),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
         SizedBox(
           height: 56,
           child: ElevatedButton(
             onPressed: () => Navigator.pop(context),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
+              backgroundColor: _darkBtn,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(100)),
+              elevation: 0,
             ),
             child: const Text('تمام 💗',
                 style: TextStyle(
@@ -400,65 +576,69 @@ class _ReflectionActivityState extends State<ReflectionActivity> {
     );
   }
 
-  Widget _respCard(Color color, {required Widget child}) {
+  // ── hero empathy card ──
+  Widget _heroCard(ReflectionResponse r) {
     return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(20),
+        gradient: const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFFFFF5EB), Color(0xFFF5DCC9)],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0x33C7745F)),
       ),
-      child: child,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+        child: Center(
+          child: Text(r.empathyTitle,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                  fontFamily: 'Raleway',
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: _darkBtn)),
+        ),
+      ),
     );
   }
 
-  Widget _titledCard(String title, String body) {
-    return _respCard(AppColors.surface,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(title,
-                textAlign: TextAlign.right,
-                style: const TextStyle(
-                    fontFamily: 'Raleway',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.deepChocolate)),
-            const SizedBox(height: 8),
-            Text(body,
-                textAlign: TextAlign.right,
-                style: const TextStyle(
-                    fontFamily: 'Raleway',
-                    fontSize: 14,
-                    height: 1.5,
-                    color: AppColors.deepChocolate)),
-          ],
-        ));
-  }
-
-  Widget _routineCard(ReflectionResponse r) {
-    return _respCard(AppColors.surface,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            const Text('📋 روتين مقترح',
-                style: TextStyle(
-                    fontFamily: 'Raleway',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.deepChocolate)),
-            const SizedBox(height: 8),
-            for (final item in r.routine)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 3),
+  // ── وصف يومك: emoji-bubble rows with hairline dividers ──
+  Widget _dayDescCard(ReflectionResponse r) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFBF4),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFEBE0D6)),
+      ),
+      child: Column(
+        children: [
+          for (var i = 0; i < r.dayDescription.length; i++) ...[
+            if (i > 0)
+              const Divider(height: 1, thickness: 1, color: Color(0x14000000)),
+            Builder(builder: (_) {
+              final (emoji, text) = _splitTrailingEmoji(r.dayDescription[i]);
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 14),
                 child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('•  ',
-                        style: TextStyle(color: AppColors.primary)),
+                    // emoji bubble on the right, before the text
+                    Container(
+                      width: 40,
+                      height: 40,
+                      alignment: Alignment.center,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFCEFE3),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(emoji, style: const TextStyle(fontSize: 18)),
+                    ),
+                    const SizedBox(width: 12),
                     Expanded(
-                      child: Text(item,
+                      child: Text(text,
+                          textAlign: TextAlign.right,
                           style: const TextStyle(
                               fontFamily: 'Raleway',
                               fontSize: 14,
@@ -467,100 +647,248 @@ class _ReflectionActivityState extends State<ReflectionActivity> {
                     ),
                   ],
                 ),
-              ),
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _saved
-                    ? null
-                    : () async {
-                        await AppDatabase.instance.insertTask(TaskEntity(
-                          title: 'روتين حاسة بإيه',
-                          iconResName: 'ic_routiny_sparkles',
-                          colorHex: '#C7745F',
-                          subTasks: r.routine,
-                          date: ymd(DateTime.now()),
-                        ));
-                        await RoutinyStats.recordTaskCreation();
-                        if (!mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                                content: Text(S.routineAddedSnack)));
-                      },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(100)),
-                ),
-                child: const Text('اعتمدي الروتين ✓',
-                    style: TextStyle(
-                        fontFamily: 'Raleway',
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white)),
+              );
+            }),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _insightCard(ReflectionResponse r) {
+    return _gradCard(
+      colors: const [Color(0xFFFFF1E6), Color(0xFFF8E2D0)],
+      radius: 20,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _cardHeader('لمحة', '💡'),
+          const SizedBox(height: 8),
+          Text(r.insight,
+              textAlign: TextAlign.right,
+              style: const TextStyle(
+                  fontFamily: 'Raleway',
+                  fontSize: 13,
+                  height: 1.5,
+                  color: AppColors.deepChocolate)),
+        ],
+      ),
+    );
+  }
+
+  Widget _adviceCard(ReflectionResponse r) {
+    return _gradCard(
+      colors: const [Color(0xFFEFF1E1), Color(0xFFE2E8D0)],
+      radius: 20,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _cardHeader('نصيحة', '🌿'),
+          const SizedBox(height: 8),
+          Text(r.advice,
+              textAlign: TextAlign.right,
+              style: const TextStyle(
+                  fontFamily: 'Raleway',
+                  fontSize: 13,
+                  height: 1.5,
+                  color: AppColors.deepChocolate)),
+        ],
+      ),
+    );
+  }
+
+  Widget _supportCard(ReflectionResponse r) {
+    return _gradCard(
+      colors: const [Color(0xFFFFEFE3), Color(0xFFF5D8C6)],
+      radius: 20,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _cardHeader('رسالة لك', '💌'),
+          const SizedBox(height: 10),
+          Text(r.supportMessage,
+              textAlign: TextAlign.right,
+              style: const TextStyle(
+                  fontFamily: 'Raleway',
+                  fontSize: 14,
+                  height: 1.6,
+                  color: AppColors.deepChocolate)),
+          const SizedBox(height: 6),
+          const Align(
+            alignment: AlignmentDirectional.centerEnd,
+            child: Text('💗', style: TextStyle(fontSize: 16)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _routineCard(ReflectionResponse r) {
+    return _gradCard(
+      colors: const [Color(0xFFEBE2EE), Color(0xFFDDD0E5)],
+      radius: 20,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _cardHeader('روتين مقترح', '📋'),
+          const SizedBox(height: 10),
+          for (final item in r.routine)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 3),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                textDirection: TextDirection.rtl,
+                children: [
+                  const Text('• ',
+                      style: TextStyle(color: _darkBtn, fontSize: 13)),
+                  Expanded(
+                    child: Text(item,
+                        textAlign: TextAlign.right,
+                        style: const TextStyle(
+                            fontFamily: 'Raleway',
+                            fontSize: 13,
+                            height: 1.4,
+                            color: AppColors.deepChocolate)),
+                  ),
+                ],
               ),
             ),
-          ],
-        ));
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 38,
+            child: ElevatedButton(
+              onPressed: _routineAdopted
+                  ? null
+                  : () async {
+                      await AppDatabase.instance.insertTask(TaskEntity(
+                        title: 'روتين حاسة بإيه',
+                        iconResName: 'ic_routiny_sparkles',
+                        colorHex: '#C7745F',
+                        subTasks: r.routine,
+                        date: ymd(DateTime.now()),
+                      ));
+                      await RoutinyStats.recordTaskCreation();
+                      if (!mounted) return;
+                      setState(() => _routineAdopted = true);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(S.routineAddedSnack)));
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF3E2818), // heavier
+                disabledBackgroundColor:
+                    const Color(0xFF3E2818).withValues(alpha: 0.5),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(28)),
+                elevation: 0,
+                padding: EdgeInsets.zero,
+              ),
+              child: Text(_routineAdopted ? 'تمت الإضافة ✓' : 'اعتمدي الروتين ✓',
+                  style: const TextStyle(
+                      fontFamily: 'Raleway',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white)),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _activityCard(ReflectionResponse r) {
     final rest = r.activityAction == ReflectionActivityAction.justRest;
-    return _respCard(const Color(0xFFEFE3D6),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text('${r.activityEmoji}  ${r.activityTitle}',
-                textAlign: TextAlign.right,
-                style: const TextStyle(
-                    fontFamily: 'Raleway',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.deepChocolate)),
-            const SizedBox(height: 6),
-            Text(r.activityDescription,
-                textAlign: TextAlign.right,
-                style: const TextStyle(
-                    fontFamily: 'Raleway',
-                    fontSize: 14,
-                    height: 1.5,
-                    color: AppColors.deepChocolate)),
-            const SizedBox(height: 10),
-            GestureDetector(
-              onTap: () {
-                switch (r.activityAction) {
-                  case ReflectionActivityAction.openBreathing:
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) =>
-                                const BreathingExerciseScreen()));
-                    break;
-                  case ReflectionActivityAction.openWater:
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const WaterTrackerScreen()));
-                    break;
-                  default:
-                    break;
-                }
-              },
-              child: Text(rest ? S.restBtn : S.startNowBtn,
-                  style: const TextStyle(
-                      fontFamily: 'Raleway',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primary)),
+    return _gradCard(
+      colors: const [Color(0xFFFFF7EE), Color(0xFFF5E4D2)],
+      radius: 22,
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Text(r.activityEmoji, style: const TextStyle(fontSize: 48)),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(r.activityTitle,
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(
+                        fontFamily: 'Raleway',
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.deepChocolate)),
+                const SizedBox(height: 4),
+                Text(r.activityDescription,
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(
+                        fontFamily: 'Raleway',
+                        fontSize: 13,
+                        height: 1.4,
+                        color: AppColors.secondaryText)),
+                const SizedBox(height: 12),
+                SizedBox(
+                  height: 44,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      switch (r.activityAction) {
+                        case ReflectionActivityAction.openBreathing:
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) =>
+                                      const BreathingExerciseScreen()));
+                          break;
+                        case ReflectionActivityAction.openWater:
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) =>
+                                      const WaterTrackerScreen()));
+                          break;
+                        case ReflectionActivityAction.openCareArticle:
+                          final card = r.articleKey == null
+                              ? null
+                              : careCardForArticle(r.articleKey!);
+                          if (card != null) {
+                            Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) => CareArticleScreen(
+                                          card: card,
+                                          accent: const Color(0xFFE8A0A0),
+                                          cardAspect: 280 / 220,
+                                        )));
+                          }
+                          break;
+                        default:
+                          break;
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      // same family as the card, just a bit heavier
+                      backgroundColor: const Color(0xFFE6C9A4),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(22)),
+                      elevation: 0,
+                    ),
+                    child: Text(rest ? S.restBtn : S.startNowBtn,
+                        style: const TextStyle(
+                            fontFamily: 'Raleway',
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF5C3D2E))),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ));
+          ),
+        ],
+      ),
+    );
   }
 
   bool get _canNext {
     if (_step == 0) return _mood != null;
-    if (_step == 1) return _feelings.isNotEmpty && _influences.isNotEmpty;
+    if (_step == 1) return _feelings.length == 3 && _influences.length == 3;
     return true;
   }
 

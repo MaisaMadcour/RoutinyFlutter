@@ -71,52 +71,77 @@ class _GlassPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final w = size.width, h = size.height;
+    // proportions ported 1:1 from the Kotlin WaterGlassView
     final padX = w * 0.18;
-    final topY = h * 0.16;
-    final bottomY = h * 0.9;
+    final topY = h * 0.18;
+    final bottomY = h * 0.88;
+    final topLeft = padX;
+    final topRight = w - padX;
+    final bottomLeft = padX + w * 0.06;
+    final bottomRight = w - padX - w * 0.06;
+
     final cup = Path()
-      ..moveTo(padX, topY)
-      ..lineTo(w - padX, topY)
-      ..lineTo(w - padX * 1.5, bottomY)
-      ..quadraticBezierTo(w / 2, bottomY + h * 0.04, padX * 1.5, bottomY)
+      ..moveTo(topLeft, topY)
+      ..lineTo(topRight, topY)
+      ..lineTo(bottomRight, bottomY)
+      ..quadraticBezierTo(w / 2, bottomY + h * 0.05, bottomLeft, bottomY)
       ..close();
+
+    final rim = Path()
+      ..addOval(Rect.fromLTRB(
+          topLeft, topY - h * 0.035, topRight, topY + h * 0.035));
 
     canvas.save();
     canvas.clipPath(cup);
 
+    // fill height = progress, lifted by an optional baseline floor (0 = none)
     final fillFrac = baseline + (1 - baseline) * progress;
-    final waterTop = topY + (bottomY - topY) * (1 - fillFrac);
+    final waterTop = h - h * fillFrac;
 
-    void wave(Color color, double amp, double shift) {
-      final p = Path()..moveTo(0, h);
-      for (var x = 0.0; x <= w; x += 4) {
-        final y = waterTop + amp * math.sin(x / w * 2 * math.pi * 2 + phase + shift);
-        if (x == 0) {
-          p.moveTo(x, y);
-        } else {
-          p.lineTo(x, y);
-        }
+    void wave(Color color, double amp, double phaseScale) {
+      final p = Path()..moveTo(0, waterTop);
+      const segments = 24;
+      for (var i = 0; i <= segments; i++) {
+        final x = w * i / segments;
+        final y = waterTop +
+            amp *
+                math.sin(phase * phaseScale +
+                    (i / segments) * 2 * math.pi * 1.5);
+        p.lineTo(x, y);
       }
       p
         ..lineTo(w, h)
         ..lineTo(0, h)
         ..close();
-      canvas.drawPath(p, Paint()..color = color);
+      canvas.drawPath(p, Paint()..color = color..isAntiAlias = true);
     }
 
-    wave(AppColors.waterDark, 6, 1.2);
-    wave(AppColors.waterBlue, 8, 0);
-    canvas.restore();
+    wave(AppColors.waterDark, 6, 0.7); // back wave (deeper, slower)
+    wave(AppColors.waterBlue, 8, 1.0); // front wave
 
+    // glossy highlight line inside the glass
     canvas.drawPath(
-      cup,
+      Path()
+        ..moveTo(topLeft + w * 0.05, topY + h * 0.10)
+        ..lineTo(topLeft + w * 0.10, bottomY - h * 0.12),
       Paint()
-        ..color = AppColors.primary
+        ..color = const Color(0xA0FFFFFF)
         ..style = PaintingStyle.stroke
         ..strokeWidth = strokeWidth
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round,
+        ..strokeCap = StrokeCap.round,
     );
+    canvas.restore();
+
+    // cup outline + rim with a soft shadow
+    final outline = Paint()
+      ..color = AppColors.primary
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    canvas.drawShadow(cup, const Color(0x40000000), 4, false);
+    canvas.drawPath(cup, outline);
+    canvas.drawPath(rim, outline);
   }
 
   @override

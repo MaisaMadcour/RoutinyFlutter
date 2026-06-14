@@ -2,12 +2,15 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../core/ads/rewarded_manager.dart';
 import '../../core/ar_dates.dart';
 import '../../core/database.dart';
 import '../../core/models.dart';
 import '../../core/routiny_stats.dart';
 import '../../theme/app_colors.dart';
 import '../reflection/reflection_models.dart';
+import 'avatar_editor_screen.dart';
+import 'journal_screen.dart';
 import 'mini_month_calendar.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -28,6 +31,67 @@ class _ProfilePageState extends State<ProfilePage> {
     super.initState();
     _nameCtrl.text = RoutinyStats.userName;
     _loadReflections();
+    RewardedManager.instance.preload();
+  }
+
+  void _openJournal() {
+    Navigator.push(context,
+        MaterialPageRoute(builder: (_) => const JournalScreen()));
+  }
+
+  // مذكراتي is gated EVERY time: tap → confirm → watch a rewarded ad → open.
+  void _onJournalTap() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('افتحي مذكراتي 🔓',
+            style: TextStyle(
+                fontFamily: 'Raleway',
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: AppColors.deepChocolate)),
+        content: const Text(
+          'شوفي إعلان قصير وافتحي مذكراتك 🌸',
+          style: TextStyle(
+              fontFamily: 'Raleway', fontSize: 14, color: AppColors.secondaryText),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('مش دلوقتي',
+                style: TextStyle(
+                    fontFamily: 'Raleway', color: AppColors.secondaryText)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              RewardedManager.instance.show(
+                onReward: () {
+                  if (mounted) _openJournal();
+                },
+                onUnavailable: () {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                          'محتاجة اتصال بالإنترنت عشان تشوفي إعلان وتفتحي مذكراتك 🌐'),
+                    ),
+                  );
+                },
+              );
+            },
+            child: const Text('شوفي إعلان وافتحي',
+                style: TextStyle(
+                    fontFamily: 'Raleway',
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary)),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _loadReflections() async {
@@ -41,12 +105,25 @@ class _ProfilePageState extends State<ProfilePage> {
     super.dispose();
   }
 
+  Future<void> _saveName() async {
+    await RoutinyStats.setUserName(_nameCtrl.text.trim());
+    FocusScope.of(context).unfocus();
+    setState(() => _editingName = false);
+  }
+
   Future<void> _pickAvatar() async {
     final picker = ImagePicker();
     final file = await picker.pickImage(source: ImageSource.gallery);
-    if (file == null) return;
-    await RoutinyStats.setAvatarPath(file.path);
-    setState(() {});
+    if (file == null || !mounted) return;
+    // open the zoom/pan editor, then save the framed result
+    final cropped = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+          builder: (_) => AvatarEditorScreen(image: File(file.path))),
+    );
+    if (cropped == null) return;
+    await RoutinyStats.setAvatarPath(cropped);
+    if (mounted) setState(() {});
   }
 
   @override
@@ -84,14 +161,14 @@ class _ProfilePageState extends State<ProfilePage> {
                   height: 92,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: AppColors.surface,
-                    border: Border.all(color: AppColors.profileStroke),
+                    color: const Color(0xFFF5E1D6), // bg_profile_avatar
+                    border: Border.all(color: const Color(0xFFE8D5CC)),
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: hasAvatar
                       ? Image.file(File(avatarPath), fit: BoxFit.cover)
-                      : const Icon(Icons.local_florist,
-                          color: AppColors.primary, size: 40),
+                      : const Icon(Icons.person,
+                          color: Color(0xFFBC8A7B), size: 44),
                 ),
               ),
             ),
@@ -117,28 +194,50 @@ class _ProfilePageState extends State<ProfilePage> {
             const SizedBox(height: 8),
             if (_editingName)
               Center(
-                child: SizedBox(
-                  width: 240,
-                  child: TextField(
-                    controller: _nameCtrl,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                        fontFamily: 'Raleway',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700),
-                    decoration: InputDecoration(
-                      hintText: 'اكتبي اسمكِ هنا',
-                      filled: true,
-                      fillColor: AppColors.surface,
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide.none),
+                child: Column(
+                  children: [
+                    SizedBox(
+                      width: 240,
+                      child: TextField(
+                        controller: _nameCtrl,
+                        autofocus: true,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                            fontFamily: 'Raleway',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700),
+                        decoration: InputDecoration(
+                          hintText: 'اكتبي اسمكِ هنا',
+                          filled: true,
+                          fillColor: AppColors.surface,
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide.none),
+                        ),
+                        onSubmitted: (_) => _saveName(),
+                      ),
                     ),
-                    onSubmitted: (v) async {
-                      await RoutinyStats.setUserName(v.trim());
-                      setState(() => _editingName = false);
-                    },
-                  ),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: 240,
+                      height: 44,
+                      child: ElevatedButton(
+                        onPressed: _saveName,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(22)),
+                          elevation: 0,
+                        ),
+                        child: const Text('حفظ',
+                            style: TextStyle(
+                                fontFamily: 'Raleway',
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white)),
+                      ),
+                    ),
+                  ],
                 ),
               )
             else
@@ -154,20 +253,22 @@ class _ProfilePageState extends State<ProfilePage> {
             Row(
               children: [
                 Expanded(
-                  child: _statCard('${RoutinyStats.dayStreak}', '☀️',
-                      'يوم متواصل'),
+                  child: _statCard('${RoutinyStats.dayStreak}',
+                      Icons.wb_sunny, const Color(0xFFF5A623), 'يوم متواصل'),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: _statCard('${RoutinyStats.tasksCompletedCount}',
-                      '✨', 'مهمة مكتملة'),
+                      Icons.auto_awesome, const Color(0xFF5A8DBF),
+                      'مهمة مكتملة'),
                 ),
               ],
             ),
             const SizedBox(height: 22),
+            // ── tasks-completed calendar ──
             const Align(
               alignment: AlignmentDirectional.centerStart,
-              child: Text('إحصائيات المهام',
+              child: Text('احصائيات ايام انجاز المهام',
                   style: TextStyle(
                       fontFamily: 'Raleway',
                       fontSize: 18,
@@ -177,30 +278,89 @@ class _ProfilePageState extends State<ProfilePage> {
             const SizedBox(height: 10),
             Container(
               padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(18),
-              ),
+              decoration: _statDecoration,
               child: MiniMonthCalendar(
                 highlightProvider: (y, m) =>
                     RoutinyStats.completedDaysInMonth(y, m),
               ),
             ),
             const SizedBox(height: 22),
+            // ── mood stats ──
             _moodStats(),
+            const SizedBox(height: 22),
+            // ── breathing calendar ──
+            const Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Text('احصائيات التنفس',
+                  style: TextStyle(
+                      fontFamily: 'Raleway',
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.deepChocolate)),
+            ),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: _statDecoration,
+              child: MiniMonthCalendar(
+                highlightProvider: (y, m) =>
+                    RoutinyStats.breathingDaysInMonth(y, m),
+              ),
+            ),
+            const SizedBox(height: 22),
+            // ── مذكراتي (last) — gated behind a rewarded ad every time ──
+            GestureDetector(
+              onTap: _onJournalTap,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                decoration: BoxDecoration(
+                  color: _cardWhite,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: _cardStroke),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.menu_book_outlined,
+                        size: 22, color: AppColors.primary),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text('مذكراتي',
+                          style: TextStyle(
+                              fontFamily: 'Raleway',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF3E2818))),
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.only(left: 6),
+                      child: Text('🔒', style: TextStyle(fontSize: 14)),
+                    ),
+                    const Icon(Icons.lock_outline,
+                        size: 20, color: AppColors.deepChocolate),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _statCard(String value, String emoji, String label) {
+  // shared white card with a hairline stroke — matches bg_profile_stats_card
+  static const _cardWhite = Color(0xFFFFFFFF);
+  static const _cardStroke = Color(0xFFEBE0D6);
+  static BoxDecoration get _statDecoration => BoxDecoration(
+        color: _cardWhite,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _cardStroke),
+      );
+
+  Widget _statCard(String value, IconData icon, Color iconColor, String label) {
     return Container(
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(18),
-      ),
+      decoration: _statDecoration,
       child: Column(
         children: [
           Row(
@@ -211,9 +371,9 @@ class _ProfilePageState extends State<ProfilePage> {
                       fontFamily: 'Raleway',
                       fontSize: 32,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.chocolate)),
+                      color: Color(0xFF3E2818))),
               const SizedBox(width: 6),
-              Text(emoji, style: const TextStyle(fontSize: 20)),
+              Icon(icon, size: 22, color: iconColor),
             ],
           ),
           const SizedBox(height: 4),
@@ -253,7 +413,7 @@ class _ProfilePageState extends State<ProfilePage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('إحصائيات إحساساتك',
+        const Text('احصائيات احساسك',
             style: TextStyle(
                 fontFamily: 'Raleway',
                 fontSize: 18,
@@ -261,11 +421,8 @@ class _ProfilePageState extends State<ProfilePage> {
                 color: AppColors.deepChocolate)),
         const SizedBox(height: 10),
         Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(18),
-          ),
+          padding: const EdgeInsets.all(14),
+          decoration: _statDecoration,
           child: Column(
             children: [
               Row(
@@ -273,7 +430,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   IconButton(
                     onPressed: () => setState(() => _moodMonth = DateTime(
                         _moodMonth.year, _moodMonth.month - 1, 1)),
-                    icon: const Icon(Icons.chevron_right,
+                    icon: const Icon(Icons.chevron_left,
                         color: AppColors.deepChocolate),
                   ),
                   Expanded(
@@ -290,7 +447,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         ? null
                         : () => setState(() => _moodMonth = DateTime(
                             _moodMonth.year, _moodMonth.month + 1, 1)),
-                    icon: Icon(Icons.chevron_left,
+                    icon: Icon(Icons.chevron_right,
                         color: isCurrentMonth
                             ? AppColors.deepChocolate
                                 .withValues(alpha: 0.35)
@@ -298,12 +455,23 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ],
               ),
-              Text(totalLabel(),
-                  style: const TextStyle(
-                      fontFamily: 'Raleway',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.deepChocolate)),
+              // total + dominant mood row
+              Row(
+                children: [
+                  Text(totalLabel(),
+                      style: const TextStyle(
+                          fontFamily: 'Raleway',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.deepChocolate)),
+                  const Spacer(),
+                  if (total > 0) Text(_dominantLabel(counts),
+                      style: const TextStyle(
+                          fontFamily: 'Raleway',
+                          fontSize: 13,
+                          color: AppColors.secondaryText)),
+                ],
+              ),
               const SizedBox(height: 12),
               if (total == 0)
                 const Text(
@@ -321,6 +489,22 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
       ],
     );
+  }
+
+  // dominant mood, e.g. "😊 غالبًا سعيدة" (matches Android ProfileActivity)
+  String _dominantLabel(Map<String, int> counts) {
+    String? topId;
+    var topCount = 0;
+    counts.forEach((id, c) {
+      if (c > topCount) {
+        topCount = c;
+        topId = id;
+      }
+    });
+    if (topId == null) return '';
+    final m = kMoods.firstWhere((e) => e.id == topId,
+        orElse: () => kMoods.first);
+    return '${m.emoji} غالبًا ${m.label}';
   }
 
   Widget _moodRow(Mood m, int count, int total) {

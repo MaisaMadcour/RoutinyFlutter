@@ -48,24 +48,42 @@ class _MainShellState extends State<MainShell> {
     TestsPage(),
   ];
 
+  // Index of the Routine tab — the "home" the back button settles on.
+  static const _routineTab = 2;
+
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<int>(
       valueListenable: ShellController.tab,
       builder: (context, current, _) {
-        return Scaffold(
-          backgroundColor: AppColors.background,
-          body: _pages[current],
-          bottomNavigationBar: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Center(child: BannerAdWidget()),
-              _BottomNav(
-                tabs: _tabs,
-                current: current,
-                onTap: (i) => ShellController.tab.value = i,
-              ),
-            ],
+        // On the routine tab → back exits the app. On any other tab →
+        // back first returns to the routine tab.
+        return PopScope(
+          canPop: current == _routineTab,
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop && current != _routineTab) {
+              ShellController.tab.value = _routineTab;
+            }
+          },
+          child: Scaffold(
+            backgroundColor: AppColors.background,
+            body: _pages[current],
+            // Bottom nav on top, ad banner BELOW it (at the very bottom of the
+            // screen) — shown on every tab, including the timer.
+            bottomNavigationBar: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _BottomNav(
+                  tabs: _tabs,
+                  current: current,
+                  onTap: (i) => ShellController.tab.value = i,
+                ),
+                const SafeArea(
+                  top: false,
+                  child: Center(child: BannerAdWidget()),
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -105,22 +123,19 @@ class _BottomNav extends StatelessWidget {
           ),
         ],
       ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: 70,
-          child: Row(
-            children: [
-              for (var i = 0; i < tabs.length; i++)
-                Expanded(
-                  child: _NavItem(
-                    def: tabs[i],
-                    selected: i == current,
-                    onTap: () => onTap(i),
-                  ),
+      child: SizedBox(
+        height: 70,
+        child: Row(
+          children: [
+            for (var i = 0; i < tabs.length; i++)
+              Expanded(
+                child: _NavItem(
+                  def: tabs[i],
+                  selected: i == current,
+                  onTap: () => onTap(i),
                 ),
-            ],
-          ),
+              ),
+          ],
         ),
       ),
     );

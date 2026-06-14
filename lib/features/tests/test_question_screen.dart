@@ -94,7 +94,7 @@ class _TestQuestionScreenState extends State<TestQuestionScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Column(
             children: [
-              // ── top bar ──────────────────────────────────────────────
+              // ── top bar (fixed) ──────────────────────────────────────
               Row(
                 children: [
                   GestureDetector(
@@ -119,7 +119,7 @@ class _TestQuestionScreenState extends State<TestQuestionScreen> {
               ),
               const SizedBox(height: 12),
 
-              // ── progress bar — white on translucent white (Android) ──
+              // ── progress bar (fixed) ─────────────────────────────────
               ClipRRect(
                 borderRadius: BorderRadius.circular(100),
                 child: LinearProgressIndicator(
@@ -129,38 +129,54 @@ class _TestQuestionScreenState extends State<TestQuestionScreen> {
                   color: Colors.white,
                 ),
               ),
-              const Spacer(flex: 2),
 
-              // ── question card ─────────────────────────────────────────
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: ImagePalette.lighten(_edge, 0.50),
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: Column(
-                  children: [
-                    Text(q.emoji, style: const TextStyle(fontSize: 40)),
-                    const SizedBox(height: 12),
-                    Text(q.text,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                            fontFamily: 'Raleway',
-                            fontSize: 19,
-                            fontWeight: FontWeight.w700,
-                            height: 1.4,
-                            color: AppColors.deepChocolate)),
-                  ],
+              // ── question + options ───────────────────────────────────
+              // Centered when there's room, scrollable when the screen is
+              // short — so the card and options never overlap on any phone.
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, c) => SingleChildScrollView(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(minHeight: c.maxHeight),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const SizedBox(height: 20),
+                          // ── question card ──
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              color: ImagePalette.lighten(_edge, 0.50),
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                            child: Column(
+                              children: [
+                                Text(q.emoji,
+                                    style: const TextStyle(fontSize: 40)),
+                                const SizedBox(height: 12),
+                                Text(q.text,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                        fontFamily: 'Raleway',
+                                        fontSize: 19,
+                                        fontWeight: FontWeight.w700,
+                                        height: 1.4,
+                                        color: AppColors.deepChocolate)),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          // ── answer options (tap = auto-advance) ──
+                          for (var i = 0; i < q.options.length; i++)
+                            _option(i, q.options[i]),
+                          const SizedBox(height: 20),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ),
-              const SizedBox(height: 18),
-
-              // ── answer options (tap = auto-advance) ───────────────────
-              for (var i = 0; i < q.options.length; i++)
-                _option(i, q.options[i]),
-
-              const Spacer(flex: 3),
             ],
           ),
         ),

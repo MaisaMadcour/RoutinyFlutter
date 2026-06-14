@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../core/ar_dates.dart';
@@ -206,7 +208,7 @@ class _FocusStatsScreenState extends State<FocusStatsScreen> {
       children: [
         IconButton(
             onPressed: () => _shift(1),
-            icon: const Icon(Icons.chevron_right,
+            icon: const Icon(Icons.chevron_left,
                 color: AppColors.deepChocolate)),
         Text(_rangeLabel,
             style: const TextStyle(
@@ -216,7 +218,7 @@ class _FocusStatsScreenState extends State<FocusStatsScreen> {
                 color: AppColors.deepChocolate)),
         IconButton(
             onPressed: () => _shift(-1),
-            icon: const Icon(Icons.chevron_left,
+            icon: const Icon(Icons.chevron_right,
                 color: AppColors.deepChocolate)),
       ],
     );
@@ -299,8 +301,28 @@ class _FocusStatsScreenState extends State<FocusStatsScreen> {
     );
   }
 
+  // ── vertical axis is always in hours, with a FIXED max per range ──
+  bool get _angled => _range == _Range.week || _range == _Range.year;
+  String get _unit => 'س';
+  String get _axisHeader => 'بالساعات';
+
+  // Fixed top-of-axis value (hours) for each tab — chosen to divide evenly
+  // across the 3 grid intervals (12→4/8/12, 42→14/28/42, 336→112/224/336).
+  double get _fixedAxisMax {
+    switch (_range) {
+      case _Range.day:
+        return 12;
+      case _Range.week:
+        return 12;
+      case _Range.month:
+        return 42;
+      case _Range.year:
+        return 336;
+    }
+  }
+
   Widget _chart() {
-    // bucket minutes by day index across the range
+    // bucket focus by slot index — every value accumulated in hours
     final buckets = <int, double>{};
     int slots;
     switch (_range) {
@@ -311,12 +333,13 @@ class _FocusStatsScreenState extends State<FocusStatsScreen> {
         slots = 7;
         break;
       case _Range.month:
-        slots = DateTime(_anchor.year, _anchor.month + 1, 0).day;
+        slots = 4; // four weeks
         break;
       case _Range.year:
         slots = 12;
         break;
     }
+    // every bar value is accumulated in hours
     for (final s in _sessions) {
       final d = DateTime.fromMillisecondsSinceEpoch(s.startTime);
       int idx;
@@ -328,43 +351,178 @@ class _FocusStatsScreenState extends State<FocusStatsScreen> {
           idx = d.difference(_start).inDays;
           break;
         case _Range.month:
-          idx = d.day - 1;
+          idx = ((d.day - 1) ~/ 7).clamp(0, 3); // 1-7→0, 8-14→1, 15-21→2, 22+→3
           break;
         case _Range.year:
           idx = d.month - 1;
           break;
       }
-      buckets[idx] = (buckets[idx] ?? 0) + s.durationSec / 60.0;
+      if (idx >= 0 && idx < slots) {
+        buckets[idx] = (buckets[idx] ?? 0) + s.durationSec / 3600.0;
+      }
     }
-    final maxV = buckets.values.fold<double>(1, (a, b) => b > a ? b : a);
+    final axisMax = _fixedAxisMax;
+
     return Container(
-      height: 200,
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.fromLTRB(8, 14, 12, 10),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          for (var i = 0; i < slots; i++)
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 1.5),
-                child: FractionallySizedBox(
-                  heightFactor: ((buckets[i] ?? 0) / maxV).clamp(0.0, 1.0),
-                  alignment: Alignment.bottomCenter,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.ribbonNeutral,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
+          Text(_axisHeader,
+              style: const TextStyle(
+                  fontFamily: 'Raleway',
+                  fontSize: 10,
+                  color: AppColors.secondaryText)),
+          const SizedBox(height: 6),
+          SizedBox(
+            height: 150,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // ── vertical axis (4 grid levels with unit) ──
+                SizedBox(
+                  width: 34,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _axisVal(axisMax),
+                      _axisVal(axisMax * 2 / 3),
+                      _axisVal(axisMax / 3),
+                      _axisVal(0),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 6),
+                // ── bars ──
+                Expanded(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      for (var i = 0; i < slots; i++)
+                        Expanded(
+                          child: Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 1.5),
+                            child: _bar((buckets[i] ?? 0) / axisMax),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 4),
+          // ── horizontal time axis (hours / days / months) ──
+          Row(
+            children: [
+              const SizedBox(width: 40),
+              Expanded(
+                child: SizedBox(
+                  height: _angled ? 46 : 18,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (var i = 0; i < slots; i++)
+                        Expanded(child: _xLabelWidget(i, slots)),
+                    ],
                   ),
                 ),
               ),
-            ),
+            ],
+          ),
         ],
       ),
     );
+  }
+
+  Widget _axisVal(double v) => Text(
+        v < 1 ? '0' : '${v.round()}$_unit',
+        style: const TextStyle(
+            fontFamily: 'Raleway', fontSize: 9, color: AppColors.secondaryText),
+      );
+
+  // A single x-axis label — angled (−40°) for week/year to avoid overlap.
+  Widget _xLabelWidget(int i, int slots) {
+    final label = _xLabel(i, slots);
+    if (label.isEmpty) return const SizedBox.shrink();
+    const style = TextStyle(
+        fontFamily: 'Raleway', fontSize: 9, color: AppColors.secondaryText);
+    if (_angled) {
+      return Align(
+        alignment: Alignment.topCenter,
+        child: Transform.rotate(
+          angle: -40 * math.pi / 180,
+          alignment: Alignment.topRight,
+          child: Text(label, maxLines: 1, softWrap: false, style: style),
+        ),
+      );
+    }
+    return Text(label,
+        textAlign: TextAlign.center, maxLines: 1, style: style);
+  }
+
+  Widget _bar(double factor) {
+    final f = factor <= 0 ? 0.0 : factor.clamp(0.06, 1.0);
+    return Stack(
+      alignment: Alignment.bottomCenter,
+      children: [
+        FractionallySizedBox(
+          heightFactor: 1,
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFFF0E1D5),
+              borderRadius: BorderRadius.circular(6),
+            ),
+          ),
+        ),
+        if (f > 0)
+          FractionallySizedBox(
+            heightFactor: f,
+            alignment: Alignment.bottomCenter,
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFFE07A62), Color(0xFFC7745F)],
+                ),
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  // axis label for the given bar index — matches Kotlin FocusStatsActivity.
+  String _xLabel(int i, int slots) {
+    switch (_range) {
+      case _Range.day:
+        // hour markers every 3h: 12ص 3ص 6ص 9ص 12م 3م 6م 9م
+        const hourLabels = [
+          '12ص', '3ص', '6ص', '9ص', '12م', '3م', '6م', '9م'
+        ];
+        if (i % 3 != 0) return '';
+        final h = i ~/ 3;
+        return h < hourLabels.length ? hourLabels[h] : '';
+      case _Range.week:
+        const days = ['سبت', 'أحد', 'اثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة'];
+        return i < days.length ? days[i] : '';
+      case _Range.month:
+        const weeks = ['أسبوع 1', 'أسبوع 2', 'أسبوع 3', 'أسبوع 4'];
+        return i < weeks.length ? weeks[i] : '';
+      case _Range.year:
+        const months = [
+          'يناير', 'فبر', 'مارس', 'أبريل', 'مايو', 'يونيو',
+          'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
+        ];
+        return i < months.length ? months[i] : '';
+    }
   }
 }

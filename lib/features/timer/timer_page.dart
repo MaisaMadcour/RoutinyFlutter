@@ -125,6 +125,15 @@ class _TimerPageState extends State<TimerPage> {
     );
   }
 
+  // force Latin (English) digits regardless of the device locale
+  String _toLatin(String s) {
+    const ar = '٠١٢٣٤٥٦٧٨٩';
+    return s.split('').map((c) {
+      final i = ar.indexOf(c);
+      return i >= 0 ? '$i' : c;
+    }).join();
+  }
+
   Widget _timerCircle() {
     final mm = _minutes.toString().padLeft(2, '0');
     return GestureDetector(
@@ -139,30 +148,47 @@ class _TimerPageState extends State<TimerPage> {
               size: const Size(330, 150),
               painter: _HandDrawnOval(),
             ),
-            if (_pomodoro) ...const [
+            // hand-drawn stars (pomodoro) — same colour as the oval
+            if (_pomodoro) ...[
               Positioned(
-                  left: 30, top: 18, child: Text('✨', style: TextStyle(fontSize: 26))),
+                  left: 30,
+                  top: 18,
+                  child: CustomPaint(
+                      size: const Size(28, 28),
+                      painter: _HandDrawnStar())),
               Positioned(
                   right: 36,
                   bottom: 20,
-                  child: Text('✨', style: TextStyle(fontSize: 18))),
+                  child: CustomPaint(
+                      size: const Size(20, 20),
+                      painter: _HandDrawnStar())),
             ],
-            if (!_pomodoro) ...const [
+            // hand-drawn hearts (timer) — same colour as the oval
+            if (!_pomodoro) ...[
               Positioned(
-                  right: 28, top: 14, child: Text('🤍', style: TextStyle(fontSize: 24))),
+                  right: 28,
+                  top: 14,
+                  child: CustomPaint(
+                      size: const Size(26, 26),
+                      painter: _HandDrawnHeart())),
               Positioned(
                   right: 60,
                   bottom: 18,
-                  child: Text('🤍', style: TextStyle(fontSize: 16))),
+                  child: CustomPaint(
+                      size: const Size(18, 18),
+                      painter: _HandDrawnHeart())),
             ],
-            Text(
-              '$mm:00',
-              style: const TextStyle(
-                fontFamily: 'InterDisplay',
-                fontSize: 84,
-                height: 1.0,
-                letterSpacing: -3,
-                color: AppColors.textDark,
+            Directionality(
+              textDirection: TextDirection.ltr,
+              child: Text(
+                '${_toLatin(mm)}:00',
+                style: const TextStyle(
+                  fontFamily: 'InterDisplay',
+                  fontSize: 84,
+                  height: 1.0,
+                  letterSpacing: -3,
+                  color: AppColors.textDark,
+                ),
               ),
             ),
           ],
@@ -283,4 +309,83 @@ class _HandDrawnOval extends CustomPainter {
 
   @override
   bool shouldRepaint(_HandDrawnOval old) => false;
+}
+
+const _doodleColor = Color(0xFFE3A593); // same hue as the hand-drawn oval
+
+/// A doodle-style 5-point star, sketched with a slightly wobbly stroke.
+class _HandDrawnStar extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+    final outer = size.width / 2 - 1.5;
+    final inner = outer * 0.42;
+    final paint = Paint()
+      ..color = _doodleColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = size.width * 0.09
+      ..strokeJoin = StrokeJoin.round
+      ..strokeCap = StrokeCap.round;
+
+    final path = Path();
+    for (var i = 0; i <= 10; i++) {
+      final r = i.isEven ? outer : inner;
+      // start pointing up, add a tiny wobble for the hand-drawn feel
+      final a = -math.pi / 2 + i * math.pi / 5;
+      final wob = math.sin(i * 2.0) * 0.6;
+      final x = cx + (r + wob) * math.cos(a);
+      final y = cy + (r + wob) * math.sin(a);
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+    path.close();
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(_HandDrawnStar old) => false;
+}
+
+/// A doodle-style heart outline, sketched with a wobbly stroke.
+class _HandDrawnHeart extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final paint = Paint()
+      ..color = _doodleColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = w * 0.10
+      ..strokeJoin = StrokeJoin.round
+      ..strokeCap = StrokeCap.round;
+
+    final path = Path();
+    const steps = 60;
+    for (var i = 0; i <= steps; i++) {
+      final t = i / steps * 2 * math.pi;
+      // classic heart parametric curve, normalised into the box
+      final hx = 16 * math.pow(math.sin(t), 3).toDouble();
+      final hy = 13 * math.cos(t) -
+          5 * math.cos(2 * t) -
+          2 * math.cos(3 * t) -
+          math.cos(4 * t);
+      final wob = math.sin(t * 6) * 0.25;
+      final x = w / 2 + (hx + wob) / 17 * (w / 2);
+      final y = h / 2 - (hy + wob) / 17 * (h / 2);
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+    path.close();
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(_HandDrawnHeart old) => false;
 }

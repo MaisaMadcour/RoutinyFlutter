@@ -1,3 +1,4 @@
+import 'package:audio_session/audio_session.dart';
 import 'package:just_audio/just_audio.dart';
 
 class FocusSound {
@@ -32,6 +33,18 @@ class CalmAudioPlayer {
   String get currentId => _currentId;
   bool get isPlaying => _player.playing;
 
+  bool _sessionReady = false;
+
+  // configure the OS audio session for media playback so it keeps
+  // playing while the screen is locked / app is in the background
+  Future<void> _ensureSession() async {
+    if (_sessionReady) return;
+    final session = await AudioSession.instance;
+    await session.configure(const AudioSessionConfiguration.music());
+    await session.setActive(true);
+    _sessionReady = true;
+  }
+
   Future<void> play(FocusSound sound) async {
     _currentId = sound.id;
     if (sound.file == null) {
@@ -39,6 +52,7 @@ class CalmAudioPlayer {
       return;
     }
     try {
+      await _ensureSession();
       await _player.setLoopMode(LoopMode.one);
       await _player.setUrl('$_kBaseUrl${sound.file}');
       await _player.setVolume(0.85);

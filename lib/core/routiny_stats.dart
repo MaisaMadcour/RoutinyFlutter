@@ -10,19 +10,22 @@ class RoutinyStats {
   static const _kSubChecks = 'stats_subtask_checks';
   static const _kCompletedDays = 'stats_completed_task_days';
   static const _kCreationDates = 'stats_task_creation_dates';
+  static const _kBreathingDays = 'stats_breathing_days';
   static const _kUserName = 'user_name';
   static const _kAvatarPath = 'avatar_path';
 
   // ---- subtask checks ----
-  static bool isSubtaskChecked(int taskId, int index) =>
-      Prefs.I.setContains(_kSubChecks, '$taskId|$index');
+  // Keyed per DATE ("taskId|index|yyyy-MM-dd") so each day is independent —
+  // a future/other day starts unchecked and only the user can mark it.
+  static bool isSubtaskChecked(int taskId, int index, String dateYmd) =>
+      Prefs.I.setContains(_kSubChecks, '$taskId|$index|$dateYmd');
 
   static Future<void> setSubtaskChecked(
-      int taskId, int index, bool checked) async {
+      int taskId, int index, String dateYmd, bool checked) async {
     if (checked) {
-      await Prefs.I.addToSet(_kSubChecks, '$taskId|$index');
+      await Prefs.I.addToSet(_kSubChecks, '$taskId|$index|$dateYmd');
     } else {
-      await Prefs.I.removeFromSet(_kSubChecks, '$taskId|$index');
+      await Prefs.I.removeFromSet(_kSubChecks, '$taskId|$index|$dateYmd');
     }
   }
 
@@ -33,30 +36,48 @@ class RoutinyStats {
   }
 
   // ---- completed task-days ----
-  static Future<void> recordTaskCompleted(int taskId) async {
-    await Prefs.I.addToSet(_kCompletedDays, '$taskId|${ymd(DateTime.now())}');
+  static Future<void> recordTaskCompleted(int taskId, String dateYmd) async {
+    await Prefs.I.addToSet(_kCompletedDays, '$taskId|$dateYmd');
   }
 
-  static Future<void> unrecordTaskCompleted(int taskId) async {
-    await Prefs.I.removeFromSet(_kCompletedDays, '$taskId|${ymd(DateTime.now())}');
+  static Future<void> unrecordTaskCompleted(int taskId, String dateYmd) async {
+    await Prefs.I.removeFromSet(_kCompletedDays, '$taskId|$dateYmd');
   }
 
   static int get tasksCompletedCount => Prefs.I.getList(_kCompletedDays).length;
 
   static Set<int> completedDaysInMonth(int year, int month) {
-    final prefix = '-${year.toString().padLeft(4, '0')}-'
-        '${month.toString().padLeft(2, '0')}-';
+    // entries look like "taskId|yyyy-MM-dd"
+    final ym = '${year.toString().padLeft(4, '0')}-'
+        '${month.toString().padLeft(2, '0')}';
     final days = <int>{};
     for (final e in Prefs.I.getList(_kCompletedDays)) {
       final parts = e.split('|');
       if (parts.length != 2) continue;
-      final date = parts[1];
-      if (date.length == 10 &&
-          date.substring(4) == prefix.substring(1)) {
-        days.add(int.tryParse(date.substring(8)) ?? 0);
+      final date = parts[1]; // yyyy-MM-dd
+      if (date.length == 10 && date.startsWith('$ym-')) {
+        final day = int.tryParse(date.substring(8));
+        if (day != null) days.add(day);
       }
     }
-    days.remove(0);
+    return days;
+  }
+
+  // ---- breathing days ----
+  static Future<void> recordBreathingDay() async {
+    await Prefs.I.addToSet(_kBreathingDays, ymd(DateTime.now()));
+  }
+
+  static Set<int> breathingDaysInMonth(int year, int month) {
+    final ym = '${year.toString().padLeft(4, '0')}-'
+        '${month.toString().padLeft(2, '0')}';
+    final days = <int>{};
+    for (final date in Prefs.I.getList(_kBreathingDays)) {
+      if (date.length == 10 && date.startsWith('$ym-')) {
+        final day = int.tryParse(date.substring(8));
+        if (day != null) days.add(day);
+      }
+    }
     return days;
   }
 

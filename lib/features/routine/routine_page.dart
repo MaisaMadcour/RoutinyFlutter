@@ -8,6 +8,7 @@ import '../../core/database.dart';
 import '../../core/models.dart';
 import '../../core/routiny_defaults.dart';
 import '../../core/routiny_stats.dart';
+import '../../core/task_reminder.dart';
 import '../../theme/app_colors.dart';
 import '../notifications/notifications_page.dart';
 import '../profile/profile_page.dart';
@@ -64,10 +65,12 @@ class _RoutinePageState extends State<RoutinePage> {
       return;
     }
     if (edit == null) {
-      await AppDatabase.instance.insertTask(result);
+      final id = await AppDatabase.instance.insertTask(result);
       await RoutinyStats.recordTaskCreation();
+      await TaskReminder.sync(id, result);
     } else {
       await AppDatabase.instance.updateTask(result);
+      await TaskReminder.sync(result.id, result);
     }
     await _reload();
   }
@@ -75,6 +78,7 @@ class _RoutinePageState extends State<RoutinePage> {
   Future<void> _deleteTask(TaskEntity t) async {
     await AppDatabase.instance.deleteTask(t.id);
     await RoutinyStats.clearSubtaskChecks(t.id);
+    await TaskReminder.cancel(t.id);
     setState(() => _expandedId = null);
     await _reload();
   }
@@ -95,7 +99,7 @@ class _RoutinePageState extends State<RoutinePage> {
         Column(
           children: [
             _stickyHeader(morning),
-            _todayHeader(),
+            // "روتيني اليوم" + count now scroll with the task list (inside it)
             Expanded(child: _taskGrid()),
           ],
         ),
@@ -335,38 +339,66 @@ class _RoutinePageState extends State<RoutinePage> {
   }
 
   Widget _taskGrid() {
+    // The "روتيني اليوم" header is the first scrollable item so it moves with
+    // the task list instead of staying pinned.
+    Widget body;
     if (!_seeded) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (_tasks.isEmpty) {
-      return const Center(
-        child: Text('لا توجد مهام لهذا اليوم',
-            style: TextStyle(
-                fontFamily: 'Raleway',
-                fontSize: 14,
-                color: AppColors.secondaryText)),
+      body = const Padding(
+        padding: EdgeInsets.only(top: 80),
+        child: Center(child: CircularProgressIndicator()),
       );
-    }
-    final rows = <Widget>[];
-    for (var i = 0; i < _tasks.length; i += 2) {
-      final first = _tasks[i];
-      final second = i + 1 < _tasks.length ? _tasks[i + 1] : null;
-      rows.add(IntrinsicHeight(
+    } else if (_tasks.isEmpty) {
+      body = const Padding(
+        padding: EdgeInsets.only(top: 60),
+        child: Center(
+          child: Text('لا توجد مهام لهذا اليوم',
+              style: TextStyle(
+                  fontFamily: 'Raleway',
+                  fontSize: 14,
+                  color: AppColors.secondaryText)),
+        ),
+      );
+    } else {
+      // Masonry: two independent columns, each card dropped into the currently
+      // shorter column — so a short card is followed straight by the next one
+      // (no big gap under it, unlike a uniform 2-col grid).
+      final colStart = <Widget>[]; // right column in RTL
+      final colEnd = <Widget>[];
+      var hStart = 0.0, hEnd = 0.0;
+      for (var i = 0; i < _tasks.length; i++) {
+        final t = _tasks[i];
+        final est = 96.0 + t.subTasks.length * 32.0; // rough card height
+        if (hStart <= hEnd) {
+          colStart.add(_card(t, i));
+          hStart += est;
+        } else {
+          colEnd.add(_card(t, i));
+          hEnd += est;
+        }
+      }
+      body = Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(child: _card(first, i)),
             Expanded(
-                child: second == null
-                    ? const SizedBox()
-                    : _card(second, i + 1)),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: colStart)),
+            Expanded(
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: colEnd)),
           ],
         ),
-      ));
+      );
     }
     return ListView(
-      padding: const EdgeInsets.fromLTRB(8, 8, 8, 160),
-      children: rows,
+      padding: const EdgeInsets.only(bottom: 160),
+      children: [
+        _todayHeader(),
+        body,
+      ],
     );
   }
 
@@ -375,6 +407,7 @@ class _RoutinePageState extends State<RoutinePage> {
       key: ValueKey(t.id),
       task: t,
       position: position,
+      dateYmd: ymd(_selected),
       expanded: _expandedId == t.id,
       onLongPress: () => setState(
           () => _expandedId = _expandedId == t.id ? null : t.id),

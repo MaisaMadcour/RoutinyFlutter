@@ -58,7 +58,7 @@ class _WeekCalendarState extends State<WeekCalendar> {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 78,
+      height: 86,
       child: PageView.builder(
         controller: _pc,
         onPageChanged: (p) => widget.onWeekChanged(_weekStartForPage(p)),
@@ -102,7 +102,7 @@ class _DayCell extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 2),
-        padding: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 8),
         decoration: BoxDecoration(
           gradient: selected
               ? const LinearGradient(
@@ -114,13 +114,18 @@ class _DayCell extends StatelessWidget {
                   ],
                 )
               : null,
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(20),
         ),
+        // hug the content so the pill never stretches into an over-tall
+        // capsule on narrow / high-density screens
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
               ArDates.dayName(day),
+              maxLines: 1,
+              overflow: TextOverflow.visible,
               style: TextStyle(
                 fontFamily: 'Raleway',
                 fontSize: 12,

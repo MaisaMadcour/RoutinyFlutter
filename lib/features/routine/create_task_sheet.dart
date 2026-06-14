@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../core/app_strings.dart';
+import '../../core/ar_dates.dart';
 import '../../core/database.dart';
 import '../../core/models.dart';
 import '../../core/task_icons.dart';
+import '../../core/task_reminder.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/press_scale.dart';
 import 'icon_picker_sheet.dart';
@@ -124,6 +126,7 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
   }
 
   Future<void> _insertMultiDayTasks(TaskEntity template) async {
+    int? firstId;
     for (final weekday in _selectedDays) {
       var d = DateTime.now();
       while (d.weekday != weekday) {
@@ -139,10 +142,13 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
           time: template.time,
           hasReminder: template.hasReminder,
         );
-        await AppDatabase.instance.insertTask(t);
+        final id = await AppDatabase.instance.insertTask(t);
+        firstId ??= id;
         d = d.add(const Duration(days: 7));
       }
     }
+    // one daily reminder at the task time (fires at the next occurrence)
+    if (firstId != null) await TaskReminder.sync(firstId, template);
     if (mounted) Navigator.pop(context, null);
   }
 
@@ -150,8 +156,11 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
     final picked = await showTimePicker(
       context: context,
       initialTime: _time ?? const TimeOfDay(hour: 8, minute: 0),
-      builder: (context, child) => Theme(
-        data: Theme.of(context).copyWith(
+      builder: (context, child) => MediaQuery(
+        // force the picker into 12-hour (AM/PM) mode regardless of device
+        data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: false),
+        child: Theme(
+          data: Theme.of(context).copyWith(
           colorScheme: const ColorScheme.light(
             primary: AppColors.primary,
             onPrimary: Colors.white,
@@ -165,12 +174,13 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
             onSecondaryContainer: AppColors.deepChocolate,
             tertiary: AppColors.primary,
           ),
-          textButtonTheme: TextButtonThemeData(
-            style: TextButton.styleFrom(
-                foregroundColor: AppColors.primary),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                  foregroundColor: AppColors.primary),
+            ),
           ),
+          child: child!,
         ),
-        child: child!,
       ),
     );
     if (picked != null) setState(() => _time = picked);
@@ -353,7 +363,7 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Text(
-                '${_time!.hour.toString().padLeft(2, '0')}:${_time!.minute.toString().padLeft(2, '0')}',
+                ArDates.time12h(_time!.hour, _time!.minute),
                 style: const TextStyle(
                     fontFamily: 'Raleway',
                     fontSize: 12,
@@ -525,7 +535,7 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
                   Text(
                     _time == null
                         ? S.anyTime
-                        : '${_time!.hour.toString().padLeft(2, '0')}:${_time!.minute.toString().padLeft(2, '0')}',
+                        : ArDates.time12h(_time!.hour, _time!.minute),
                     style: TextStyle(
                         fontFamily: 'Raleway',
                         fontSize: 13,

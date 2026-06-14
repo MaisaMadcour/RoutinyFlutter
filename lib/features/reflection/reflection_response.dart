@@ -29,6 +29,7 @@ class ReflectionResponse {
   final String activityDescription;
   final String activityEmoji;
   final ReflectionActivityAction activityAction;
+  final String? articleKey; // care article to open for openCareArticle
 
   const ReflectionResponse({
     required this.empathyTitle,
@@ -41,6 +42,7 @@ class ReflectionResponse {
     required this.activityDescription,
     required this.activityEmoji,
     required this.activityAction,
+    this.articleKey,
   });
 }
 
@@ -67,8 +69,15 @@ class _Activity {
   final String description;
   final String emoji;
   final ReflectionActivityAction action;
-  const _Activity(this.title, this.description, this.emoji, this.action);
+  final String? articleKey;
+  const _Activity(this.title, this.description, this.emoji, this.action,
+      [this.articleKey]);
 }
+
+/// A care article + a short framing line, chosen to fit the mood/feelings.
+const _article = ReflectionActivityAction.openCareArticle;
+_Activity _articleActivity(String title, String desc, String key) =>
+    _Activity(title, desc, '📖', _article, key);
 
 /// اختيار النشاط المقترح — أول قاعدة تتطابق هي الفائزة.
 _Activity _pickActivity(
@@ -76,113 +85,71 @@ _Activity _pickActivity(
   Set<String> feelings,
   Set<String> influences,
 ) {
+  // each result opens a real care article that fits the feeling/mood
   if (feelings.contains('anxious') || feelings.contains('overwhelmed')) {
-    return const _Activity(
-      'تمرين تنفّس قصير',
-      '5 دقايق تنفّس عميق هيهدّوا الجهاز العصبي ويفصلوكِ عن الضوضاء.',
-      '🌬️',
-      ReflectionActivityAction.openBreathing,
-    );
+    return _articleActivity('مقال يهدّيكي',
+        'كلمات بسيطة تفكّرك إن الراحة حقّك مش رفاهية.', 'care_talks_2');
   }
   if (feelings.contains('sad') || feelings.contains('lonely')) {
-    return const _Activity(
-      'مقال عناية يلمسك',
-      'كلمات هتفكّرك إنّك مش لوحدك في الإحساس ده.',
-      '📖',
-      ReflectionActivityAction.openCareArticle,
-    );
+    return _articleActivity('مقال يلمس قلبك',
+        'كلمات هتفكّرك إنّك مش لوحدك في الإحساس ده.', 'care_talks_2');
   }
   if (feelings.contains('angry') || feelings.contains('frustrated')) {
-    return const _Activity(
-      'تنفّس + سكتة قصيرة',
-      'قبل ما تردّي على أي حاجة، خدي 5 دقايق تنفّس واهدي.',
-      '🌬️',
-      ReflectionActivityAction.openBreathing,
-    );
+    return _articleActivity('مقال يهدّي أفكارك',
+        'قبل ما تردّي على أي حاجة، اقري كلمات بتساعدك تهدي.',
+        'care_self_1');
+  }
+  if (feelings.contains('guilty')) {
+    return _articleActivity('مقال عن الشعور بالذنب',
+        'مش كل ذنب حقيقي… اقري ده وكوني ألطف مع نفسك.', 'care_talks_3');
   }
   if (feelings.contains('unmotivated') || feelings.contains('bored')) {
-    return const _Activity(
-      'خطوة صغيرة',
-      'ابدأي بكاسة ميه دلوقتي. خطوة صغيرة بتفتح طاقة جديدة.',
-      '💧',
-      ReflectionActivityAction.openWater,
-    );
+    return _articleActivity('مقال يرجّعلك حماسك',
+        'سر الاستمرار مش الحماس — اقري إزاي تكمّلي بهدوء.',
+        'care_prod_4');
   }
   if (feelings.contains('confused')) {
-    return const _Activity(
-      'خدي وقتك',
-      'مش لازم تلاقي إجابة دلوقتي. اشربي ميه وفكّري ببطء.',
-      '💧',
-      ReflectionActivityAction.openWater,
-    );
+    return _articleActivity('مقال ينظّم أفكارك',
+        'مش لازم تلاقي إجابة دلوقتي. اقري إزاي تبني روتين يناسبك.',
+        'care_prod_1');
   }
   if (feelings.contains('exhausted') || feelings.contains('tired')) {
-    return const _Activity(
-      'ارتاحي شوية',
-      'مش لازم تنجزي حاجة النهارده. اشربي ميه واستلقي بهدوء.',
-      '🫂',
-      ReflectionActivityAction.justRest,
-    );
+    return _articleActivity('مقال يديكي راحة',
+        'الراحة مش كسل — اقري ده وارتاحي من غير تأنيب.', 'care_talks_2');
+  }
+  if (feelings.contains('strong')) {
+    return _articleActivity('مقال يكمّل قوّتك',
+        'ازاي تكوني قوية وناعمة في نفس الوقت.', 'care_sleep_6');
   }
   if (feelings.contains('grateful') ||
       feelings.contains('hopeful') ||
       feelings.contains('proud')) {
-    return const _Activity(
-      'مقال يوازن إحساسك',
-      'اقري كلمات صغيرة بتدّعمك وتثبّت الإحساس الحلو ده.',
-      '📖',
-      ReflectionActivityAction.openCareArticle,
-    );
+    return _articleActivity('مقال يثبّت إحساسك الحلو',
+        'اقري كلمات بتدعمك وتخليكي نسخة أفضل من نفسك.',
+        'care_sleep_2');
   }
   if (feelings.contains('calm')) {
-    return const _Activity(
-      'تنفّس هادي',
-      'دقايق تنفّس بسيطة هتثبّت الهدوء اللي حاسة بيه.',
-      '🌬️',
-      ReflectionActivityAction.openBreathing,
-    );
+    return _articleActivity('مقال يكمّل هدوءك',
+        'روتين بسيط لحياة أكثر هدوء وسكينة.', 'care_self_1');
   }
 
-  if (influences.contains('health') || influences.contains('sleep')) {
-    return const _Activity(
-      'اشربي كاسة ميه',
-      'تبدأي بحاجة بسيطة هتساعد جسمك يستعيد طاقته.',
-      '💧',
-      ReflectionActivityAction.openWater,
-    );
-  }
-
+  // mood fallback
   switch (moodId) {
     case 'wonderful':
     case 'good':
-      return const _Activity(
-        'كاسة ميه دافية',
-        'بداية صغيرة تخلّي يومك يكمّل بنفس الطاقة.',
-        '💧',
-        ReflectionActivityAction.openWater,
-      );
+      return _articleActivity('مقال يكمّل طاقتك',
+          'قوة العادات الصغيرة في تغيير حياتك.', 'care_sleep_3');
     case 'okay':
-      return const _Activity(
-        'كاسة ميه + تنفّس',
-        'بداية بسيطة تعيد للجسم توازنه.',
-        '💧',
-        ReflectionActivityAction.openWater,
-      );
+      return _articleActivity('مقال يبدأ يومك',
+          'ازاي تبني روتين يناسبك من غير ما يضغطك.', 'care_prod_1');
     case 'not_good':
-      return const _Activity(
-        'تمرين تنفّس قصير',
-        'خدي 5 دقايق لنفسك. الجهاز العصبي محتاج break.',
-        '🌬️',
-        ReflectionActivityAction.openBreathing,
-      );
+      return _articleActivity('مقال يخفّف عنك',
+          'الراحة حقّك — اقري ده وكوني لطيفة مع نفسك.', 'care_talks_2');
     case 'bad':
     default:
-      return const _Activity(
-        'ارتاحي شوية',
-        'مش لازم تنجزي حاجة النهارده. اشربي ميه واستلقي بهدوء.',
-        '🫂',
-        ReflectionActivityAction.justRest,
-      );
+      return _articleActivity('مقال يحتويكي',
+          'مش لازم تنجزي حاجة النهاردة. اقري كلمات بتطمّنك.',
+          'care_talks_2');
   }
 }
 
@@ -229,5 +196,6 @@ ReflectionResponse generateReflection(
     activityDescription: activity.description,
     activityEmoji: activity.emoji,
     activityAction: activity.action,
+    articleKey: activity.articleKey,
   );
 }
