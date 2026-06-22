@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/app_strings.dart';
+import '../../core/app_updater.dart';
 import '../../core/ads/banner_ad_widget.dart';
 import '../../theme/app_colors.dart';
 import '../routine/routine_page.dart';
@@ -27,6 +28,8 @@ class _MainShellState extends State<MainShell> {
   void initState() {
     super.initState();
     ShellController.tab.value = widget.initialTab;
+    // check Google Play for a newer version and auto-update in the background
+    AppUpdater.check();
   }
 
   // Index order: 0 settings, 1 care, 2 routine, 3 timer, 4 tests.

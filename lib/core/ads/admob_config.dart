@@ -8,9 +8,8 @@ class AdMobConfig {
   // ─── Production (Play Store) ───
   static const _bannerReal = 'ca-app-pub-1631773372582425/8000135908';
   static const _interstitialReal = 'ca-app-pub-1631773372582425/6435772797';
-  // TODO: create a Rewarded ad unit in the AdMob account (…582425) and paste
-  // its id here. Until then it falls back to Google's test rewarded id.
-  static const _rewardedReal = 'ca-app-pub-3940256099942544/5224354917';
+  // Real Rewarded ad unit (مذكراتي unlock) — created in AdMob.
+  static const _rewardedReal = 'ca-app-pub-1631773372582425/4348951886';
 
   // ─── Google's official test IDs ───
   static const _bannerTest = 'ca-app-pub-3940256099942544/6300978111';
