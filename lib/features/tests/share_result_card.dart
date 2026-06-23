@@ -111,7 +111,10 @@ Future<void> _captureAndShare(GlobalKey key, String text) async {
     final dir = await getTemporaryDirectory();
     final file = File('${dir.path}/routiny_result.png');
     await file.writeAsBytes(bytes!.buffer.asUint8List());
-    await Share.shareXFiles([XFile(file.path)], text: text);
+    // Share the image ONLY — no text. When an image is sent together with a
+    // URL caption, Story targets (Instagram/WhatsApp) treat it as a link share
+    // and drop the image. The download link is already baked into the card.
+    await Share.shareXFiles([XFile(file.path)]);
   } catch (_) {
     await Share.share(text); // fallback to plain text
   }
