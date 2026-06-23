@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/database.dart';
 import '../../core/prefs.dart';
@@ -204,7 +205,18 @@ class SettingsPage extends StatelessWidget {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () async {
+                    Navigator.pop(context);
+                    final storeUrl = Uri.parse(
+                        'market://details?id=com.routiny.app');
+                    final webUrl = Uri.parse(
+                        'https://play.google.com/store/apps/details?id=com.routiny.app');
+                    if (!await launchUrl(storeUrl,
+                        mode: LaunchMode.externalApplication)) {
+                      await launchUrl(webUrl,
+                          mode: LaunchMode.externalApplication);
+                    }
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1F3F4D),
                     shape: RoundedRectangleBorder(

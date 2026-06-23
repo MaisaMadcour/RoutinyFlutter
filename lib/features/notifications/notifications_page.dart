@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../theme/app_colors.dart';
 import 'notification_prefs.dart';
@@ -138,7 +139,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
               right: 12,
               child: GestureDetector(
                 onTap: () => Navigator.pop(context),
-                child: const Icon(Icons.arrow_forward,
+                child: const Icon(Icons.arrow_back,
                     color: AppColors.deepChocolate),
               ),
             ),
@@ -271,12 +272,18 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   fontSize: 13,
                   color: AppColors.secondaryText)),
           const SizedBox(height: 8),
-          const Text('اذهبي إلى إعدادات الجهاز ←',
-              style: TextStyle(
-                  fontFamily: 'Raleway',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF7B9C70))),
+          GestureDetector(
+            onTap: () async {
+              const channel = MethodChannel('com.routiny.routiny/focus');
+              await channel.invokeMethod('openBatterySettings');
+            },
+            child: const Text('اذهبي إلى إعدادات الجهاز ←',
+                style: TextStyle(
+                    fontFamily: 'Raleway',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF7B9C70))),
+          ),
         ],
       ),
     );

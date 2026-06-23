@@ -391,7 +391,7 @@ class _TestResultScreenState extends State<TestResultScreen> {
                     borderRadius: BorderRadius.circular(24)),
                 elevation: 0,
               ),
-              child: Text(_adopted ? 'اتعمدت ✓' : 'اعتمدي الروتين ✓',
+              child: Text(_adopted ? 'تم الاعتماد ✓' : 'اعتمدي الروتين ✓',
                   style: const TextStyle(
                       fontFamily: 'Raleway',
                       fontSize: 14,
