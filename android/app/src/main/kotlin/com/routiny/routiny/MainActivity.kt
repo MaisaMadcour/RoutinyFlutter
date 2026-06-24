@@ -108,6 +108,17 @@ class MainActivity : FlutterActivity() {
                         startActivity(intent)
                         result.success(null)
                     }
+                    "scheduleCampaign" -> {
+                        com.routiny.routiny.notifications.CampaignScheduler.schedule(
+                            this,
+                            call.argument<Int>("id") ?: 7001,
+                            call.argument<String>("title") ?: "روتيني",
+                            call.argument<String>("body") ?: "",
+                            (call.argument<Number>("triggerAtMillis")?.toLong())
+                                ?: 0L
+                        )
+                        result.success(null)
+                    }
                     else -> result.notImplemented()
                 }
             }

@@ -6,6 +6,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'app.dart';
 import 'core/ads/interstitial_manager.dart';
 import 'core/ads/rewarded_manager.dart';
+import 'core/campaign_notifications.dart';
 import 'core/lang_notifier.dart';
 import 'core/prefs.dart';
 
@@ -22,6 +23,8 @@ Future<void> main() async {
   ));
   await SystemChrome.setPreferredOrientations(
       [DeviceOrientation.portraitUp]);
+  // Schedule any pending one-off seasonal notifications (e.g. Ashura).
+  CampaignNotifications.scheduleAll();
   // Initialize AdMob and preload the first interstitial in the background.
   MobileAds.instance.initialize().then((_) {
     // Register the dev/test phone so it always serves test ads (real users

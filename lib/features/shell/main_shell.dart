@@ -71,8 +71,8 @@ class _MainShellState extends State<MainShell> {
           child: Scaffold(
             backgroundColor: AppColors.background,
             body: _pages[current],
-            // Bottom nav on top, ad banner BELOW it (at the very bottom of the
-            // screen) — shown on every tab, including the timer.
+            // Bottom nav on top, ad banner BELOW it — shown on every tab
+            // EXCEPT the routine tab (kept clean, no banner).
             bottomNavigationBar: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -81,10 +81,11 @@ class _MainShellState extends State<MainShell> {
                   current: current,
                   onTap: (i) => ShellController.tab.value = i,
                 ),
-                const SafeArea(
-                  top: false,
-                  child: Center(child: BannerAdWidget()),
-                ),
+                if (current != _routineTab)
+                  const SafeArea(
+                    top: false,
+                    child: Center(child: BannerAdWidget()),
+                  ),
               ],
             ),
           ),

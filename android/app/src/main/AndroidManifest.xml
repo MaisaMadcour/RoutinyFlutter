@@ -74,6 +74,11 @@
             android:name=".reminder.ReminderReceiver"
             android:exported="false" />
 
+        <!-- مُستقبِل إشعارات المناسبات (لمرة واحدة في وقت محدد) -->
+        <receiver
+            android:name=".notifications.CampaignReceiver"
+            android:exported="false" />
+
         <!-- مُستقبِل إعادة التشغيل -->
         <receiver
             android:name=".boot.BootReceiver"

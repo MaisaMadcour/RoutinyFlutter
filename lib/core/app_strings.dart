@@ -117,7 +117,7 @@ class S {
   static String get navSettings => 'الإعدادات';
   static String get navCare => isFusha ? 'العناية' : 'عناية';
   static String get navRoutine => 'روتيني';
-  static String get navTimer => 'تايم';
+  static String get navTimer => 'تايمر';
   static String get navTests => isFusha ? 'اختبارات' : 'اختبار';
 
   // Care
