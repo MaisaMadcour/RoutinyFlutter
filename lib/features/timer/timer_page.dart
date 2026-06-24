@@ -119,7 +119,7 @@ class _TimerPageState extends State<TimerPage> {
         mainAxisSize: MainAxisSize.min,
         children: [
           tab('بومودورو', _pomodoro, () => setState(() => _pomodoro = true)),
-          tab('تايم', !_pomodoro, () => setState(() => _pomodoro = false)),
+          tab('تايمر', !_pomodoro, () => setState(() => _pomodoro = false)),
         ],
       ),
     );

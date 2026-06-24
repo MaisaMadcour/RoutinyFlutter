@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../core/app_strings.dart';
 import '../../core/app_updater.dart';
-import '../../core/ads/banner_ad_widget.dart';
 import '../../theme/app_colors.dart';
 import '../routine/routine_page.dart';
 import '../timer/timer_page.dart';
@@ -71,22 +70,10 @@ class _MainShellState extends State<MainShell> {
           child: Scaffold(
             backgroundColor: AppColors.background,
             body: _pages[current],
-            // Bottom nav on top, ad banner BELOW it — shown on every tab
-            // EXCEPT the routine tab (kept clean, no banner).
-            bottomNavigationBar: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _BottomNav(
-                  tabs: _tabs,
-                  current: current,
-                  onTap: (i) => ShellController.tab.value = i,
-                ),
-                if (current != _routineTab)
-                  const SafeArea(
-                    top: false,
-                    child: Center(child: BannerAdWidget()),
-                  ),
-              ],
+            bottomNavigationBar: _BottomNav(
+              tabs: _tabs,
+              current: current,
+              onTap: (i) => ShellController.tab.value = i,
             ),
           ),
         );
@@ -127,19 +114,24 @@ class _BottomNav extends StatelessWidget {
           ),
         ],
       ),
-      child: SizedBox(
-        height: 70,
-        child: Row(
-          children: [
-            for (var i = 0; i < tabs.length; i++)
-              Expanded(
-                child: _NavItem(
-                  def: tabs[i],
-                  selected: i == current,
-                  onTap: () => onTap(i),
+      // SafeArea keeps the labels above the system gesture bar; the taller
+      // height gives the icon + label enough room to render fully.
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 84,
+          child: Row(
+            children: [
+              for (var i = 0; i < tabs.length; i++)
+                Expanded(
+                  child: _NavItem(
+                    def: tabs[i],
+                    selected: i == current,
+                    onTap: () => onTap(i),
+                  ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
