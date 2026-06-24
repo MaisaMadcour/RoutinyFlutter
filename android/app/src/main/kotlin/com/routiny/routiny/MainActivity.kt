@@ -119,6 +119,15 @@ class MainActivity : FlutterActivity() {
                         )
                         result.success(null)
                     }
+                    "showNotification" -> {
+                        com.routiny.routiny.notifications.CampaignReceiver
+                            .postNow(
+                                this,
+                                call.argument<String>("title") ?: "روتيني",
+                                call.argument<String>("body") ?: ""
+                            )
+                        result.success(null)
+                    }
                     else -> result.notImplemented()
                 }
             }

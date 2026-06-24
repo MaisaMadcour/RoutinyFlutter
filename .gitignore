@@ -12,6 +12,9 @@
 .swiftpm/
 migrate_working_dir/
 
+# Firebase config (kept out of the public repo)
+android/app/google-services.json
+
 # IntelliJ related
 *.iml
 *.ipr

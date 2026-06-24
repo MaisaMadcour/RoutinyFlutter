@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import com.routiny.routiny.MainActivity
 import com.routiny.routiny.R
 
@@ -34,7 +35,8 @@ class QuoteNotificationReceiver : BroadcastReceiver() {
         )
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.launch_background)
+            .setSmallIcon(R.drawable.ic_heart)
+            .setColor(ContextCompat.getColor(context, R.color.routiny_orange))
             .setContentTitle("لكِ يا جميلة 💗")
             .setContentText(quote)
             .setStyle(NotificationCompat.BigTextStyle().bigText(quote))
