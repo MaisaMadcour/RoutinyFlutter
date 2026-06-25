@@ -9,6 +9,7 @@ import 'breathing_exercise_screen.dart';
 import 'care_article_screen.dart';
 import 'care_data.dart';
 import 'care_models.dart';
+import 'dynamic_articles.dart';
 import 'quote_dialog.dart';
 import 'quotes_data.dart';
 
@@ -62,6 +63,9 @@ class _CarePageState extends State<CarePage> {
                     const SizedBox(height: 6),
                     _breathingBanner(),
                     const SizedBox(height: 6),
+                    // Admin-authored articles from Firestore (renders nothing
+                    // if empty/offline — built-in sections below are unaffected).
+                    DynamicArticlesSection(accent: _accents[0]),
                     for (var i = 0; i < careSections.length; i++)
                       _section(careSections[i], _accents[i % _accents.length]),
                   ],
