@@ -1,5 +1,18 @@
 import 'care_models.dart';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// لإضافة مقال جديد:
+//
+// 1. حطي صورة الغلاف في:  assets/images/care_XXXX.jpg
+//
+// 2. ضيفي المحتوى في قاع الملف ده جوه map  careArticles:
+//      'care_XXXX': CareArticle(intro: '...', sections: [...]),
+//
+// 3. ضيفي الكارت أول حاجة في الكاتجري المناسبة هنا تحت:
+//      CareCardDef('عنوان المقال', 'care_XXXX', 'care_XXXX'),
+//    حطيه أول سطر في الـ cards list عشان يبان أول مقال في الكاتجري.
+// ─────────────────────────────────────────────────────────────────────────────
+
 // the 7 care sections, in display order
 const careSections = <CareSectionDef>[
   CareSectionDef(
