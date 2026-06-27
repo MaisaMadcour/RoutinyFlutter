@@ -7,6 +7,18 @@ import 'package:flutter/material.dart';
 import '../../core/lang_notifier.dart';
 import '../../theme/app_colors.dart';
 
+// Maps the short section key the admin app saves → the full title used in
+// careSections so that articles from the admin always land in the right row.
+const _adminKeyToTitle = <String, String>{
+  'behavior': 'سلوكياتك ونفسيتك',
+  'routine':  'استمري في روتينك',
+  'day':      'يومك بيحكي',
+  'grow':     'طوري ذاتك',
+  'beauty':   'جمالك بدون تعقيد',
+  'life':     'روتين وحياة',
+  'other':    'اخرى',
+};
+
 // ─── Model ───────────────────────────────────────────────────────────────────
 
 class DynamicArticle {
@@ -46,9 +58,10 @@ class DynamicArticle {
       if (b64 != null && b64.isNotEmpty) {
         bytes = base64Decode(b64);
       }
+      final rawSection = (d['section'] as String?) ?? '';
       return DynamicArticle(
         id: doc.id,
-        section: (d['section'] as String?) ?? '',
+        section: _adminKeyToTitle[rawSection] ?? rawSection,
         titleMasri: (d['title_masri'] as String?) ?? (d['title'] as String?) ?? '',
         titleFusha: (d['title_fusha'] as String?) ?? (d['title'] as String?) ?? '',
         contentMasri: (d['content_masri'] as String?) ?? (d['content'] as String?) ?? '',
