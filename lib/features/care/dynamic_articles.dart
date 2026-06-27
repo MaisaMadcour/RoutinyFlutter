@@ -55,13 +55,18 @@ class DynamicArticle {
 }
 
 /// Streams admin-authored articles from Firestore, newest first.
+/// Drafts (published == false) are hidden; everything else is shown.
+/// Filtered client-side so no composite Firestore index is required.
 Stream<List<DynamicArticle>> dynamicArticlesStream() {
   return FirebaseFirestore.instance
       .collection('articles')
       .orderBy('createdAt', descending: true)
       .snapshots()
-      .map((snap) =>
-          snap.docs.map(DynamicArticle.fromDoc).whereType<DynamicArticle>().toList());
+      .map((snap) => snap.docs
+          .where((d) => d.data()['published'] != false)
+          .map(DynamicArticle.fromDoc)
+          .whereType<DynamicArticle>()
+          .toList());
 }
 
 /// A horizontal strip of the latest admin articles, shown above the built-in
