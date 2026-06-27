@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../theme/app_colors.dart';
@@ -9,6 +11,7 @@ import 'breathing_exercise_screen.dart';
 import 'care_article_screen.dart';
 import 'care_data.dart';
 import 'care_models.dart';
+import 'dynamic_articles.dart';
 import 'quote_dialog.dart';
 import 'quotes_data.dart';
 
@@ -20,6 +23,24 @@ class CarePage extends StatefulWidget {
 }
 
 class _CarePageState extends State<CarePage> {
+  List<DynamicArticle> _dynamicArticles = [];
+  StreamSubscription<List<DynamicArticle>>? _articleSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _articleSub = dynamicArticlesStream().listen(
+      (list) => setState(() => _dynamicArticles = list),
+      onError: (_) {}, // offline — keep empty list, static sections unaffected
+    );
+  }
+
+  @override
+  void dispose() {
+    _articleSub?.cancel();
+    super.dispose();
+  }
+
   // Icon per section title
   static const _sectionIcons = <String, IconData>{
     'سلوكياتك ونفسيتك': Icons.psychology,
@@ -63,7 +84,13 @@ class _CarePageState extends State<CarePage> {
                     _breathingBanner(),
                     const SizedBox(height: 6),
                     for (var i = 0; i < careSections.length; i++)
-                      _section(careSections[i], _accents[i % _accents.length]),
+                      _section(
+                        careSections[i],
+                        _accents[i % _accents.length],
+                        _dynamicArticles
+                            .where((a) => a.section == careSections[i].title)
+                            .toList(),
+                      ),
                   ],
                 ),
               ),
@@ -319,7 +346,12 @@ class _CarePageState extends State<CarePage> {
   }
 
   // ── Section row ───────────────────────────────────────────────────────────
-  Widget _section(CareSectionDef section, Color accent) {
+  Widget _section(
+    CareSectionDef section,
+    Color accent,
+    List<DynamicArticle> dynamics,
+  ) {
+    final totalCount = dynamics.length + section.cards.length;
     return Padding(
       padding: const EdgeInsets.only(top: 24),
       child: Column(
@@ -362,10 +394,15 @@ class _CarePageState extends State<CarePage> {
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 14),
-              itemCount: section.cards.length,
+              itemCount: totalCount,
               separatorBuilder: (_, __) => const SizedBox(width: 12),
               itemBuilder: (context, i) {
-                final card = section.cards[i];
+                // dynamic articles appear first
+                if (i < dynamics.length) {
+                  return _dynamicCard(dynamics[i], section, accent);
+                }
+                // static articles follow
+                final card = section.cards[i - dynamics.length];
                 return GestureDetector(
                   onTap: () => Navigator.push(
                     context,
@@ -375,49 +412,93 @@ class _CarePageState extends State<CarePage> {
                         accent: accent,
                         cardAspect: section.cardW / section.cardH,
                         related: section.cards
-                            .where(
-                                (c) => c.articleKey != card.articleKey)
+                            .where((c) => c.articleKey != card.articleKey)
                             .take(6)
                             .toList(),
                       ),
                     ),
                   ),
-                  child: SizedBox(
+                  child: _cardShell(
                     width: section.cardW,
-                    child: Stack(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(20),
-                          child: Image.asset(
-                            'assets/images/${card.imageAsset}.jpg',
-                            width: section.cardW,
-                            height: section.cardH,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                        Positioned(
-                          bottom: 12,
-                          right: 12,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(100),
-                            ),
-                            child: const Text('اقرئي المزيد',
-                                style: TextStyle(
-                                    fontFamily: 'Raleway',
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.primary)),
-                          ),
-                        ),
-                      ],
+                    height: section.cardH,
+                    image: Image.asset(
+                      'assets/images/${card.imageAsset}.jpg',
+                      width: section.cardW,
+                      height: section.cardH,
+                      fit: BoxFit.cover,
                     ),
                   ),
                 );
               },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Dynamic article card (same shell as static cards) ─────────────────────
+  Widget _dynamicCard(
+      DynamicArticle article, CareSectionDef section, Color accent) {
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              DynamicArticleScreen(article: article, accent: accent),
+        ),
+      ),
+      child: _cardShell(
+        width: section.cardW,
+        height: section.cardH,
+        image: article.imageBytes != null
+            ? Image.memory(
+                article.imageBytes!,
+                width: section.cardW,
+                height: section.cardH,
+                fit: BoxFit.cover,
+              )
+            : Container(
+                width: section.cardW,
+                height: section.cardH,
+                color: accent,
+              ),
+      ),
+    );
+  }
+
+  // ── Shared card shell (rounded image + "اقرئي المزيد" badge) ─────────────
+  Widget _cardShell({
+    required double width,
+    required double height,
+    required Widget image,
+  }) {
+    return SizedBox(
+      width: width,
+      child: Stack(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: image,
+          ),
+          Positioned(
+            bottom: 12,
+            right: 12,
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(100),
+              ),
+              child: const Text(
+                'اقرئي المزيد',
+                style: TextStyle(
+                    fontFamily: 'Raleway',
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary),
+              ),
             ),
           ),
         ],

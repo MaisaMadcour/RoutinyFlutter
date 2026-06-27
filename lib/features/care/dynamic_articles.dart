@@ -4,59 +4,67 @@ import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-import '../../core/app_strings.dart';
+import '../../core/lang_notifier.dart';
 import '../../theme/app_colors.dart';
 
-/// An article authored in the admin app and stored in Firestore.
-/// Bilingual (masri/fusha); resolves to the user's current language with a
-/// graceful fallback to the other language.
-class DynamicArticle {
-  DynamicArticle({
-    required this.id,
-    required this.section,
-    required this.title,
-    required this.content,
-    required this.imageBytes,
-  });
+// ─── Model ───────────────────────────────────────────────────────────────────
 
+class DynamicArticle {
   final String id;
-  final String section;
-  final String title;
-  final String content;
+  final String section; // must match CareSectionDef.title
+  final String titleMasri;
+  final String titleFusha;
+  final String contentMasri;
+  final String contentFusha;
   final Uint8List? imageBytes;
 
-  static String _pick(Map<String, dynamic> m, String masriKey, String fushaKey) {
-    final masri = (m[masriKey] ?? '').toString().trim();
-    final fusha = (m[fushaKey] ?? '').toString().trim();
-    if (S.isFusha) return fusha.isNotEmpty ? fusha : masri;
-    return masri.isNotEmpty ? masri : fusha;
+  const DynamicArticle({
+    required this.id,
+    required this.section,
+    required this.titleMasri,
+    required this.titleFusha,
+    required this.contentMasri,
+    required this.contentFusha,
+    this.imageBytes,
+  });
+
+  String get title {
+    final lang = LangNotifier.instance.value;
+    return lang == 'masri' ? titleMasri : titleFusha;
   }
 
-  static DynamicArticle? fromDoc(QueryDocumentSnapshot<Map<String, dynamic>> d) {
-    final m = d.data();
-    final title = _pick(m, 'title_masri', 'title_fusha');
-    final content = _pick(m, 'content_masri', 'content_fusha');
-    if (title.isEmpty && content.isEmpty) return null;
-    Uint8List? img;
-    final b64 = (m['imageBase64'] ?? '').toString();
-    if (b64.isNotEmpty) {
-      try {
-        img = base64Decode(b64);
-      } catch (_) {}
+  String get content {
+    final lang = LangNotifier.instance.value;
+    return lang == 'masri' ? contentMasri : contentFusha;
+  }
+
+  static DynamicArticle? fromDoc(DocumentSnapshot doc) {
+    try {
+      final d = doc.data() as Map<String, dynamic>;
+      Uint8List? bytes;
+      final b64 = d['imageBase64'] as String?;
+      if (b64 != null && b64.isNotEmpty) {
+        bytes = base64Decode(b64);
+      }
+      return DynamicArticle(
+        id: doc.id,
+        section: (d['section'] as String?) ?? '',
+        titleMasri: (d['title_masri'] as String?) ?? (d['title'] as String?) ?? '',
+        titleFusha: (d['title_fusha'] as String?) ?? (d['title'] as String?) ?? '',
+        contentMasri: (d['content_masri'] as String?) ?? (d['content'] as String?) ?? '',
+        contentFusha: (d['content_fusha'] as String?) ?? (d['content'] as String?) ?? '',
+        imageBytes: bytes,
+      );
+    } catch (_) {
+      return null;
     }
-    return DynamicArticle(
-      id: d.id,
-      section: (m['section'] ?? '').toString(),
-      title: title,
-      content: content,
-      imageBytes: img,
-    );
   }
 }
 
+// ─── Stream ───────────────────────────────────────────────────────────────────
+
 /// Streams admin-authored articles from Firestore, newest first.
-/// Drafts (published == false) are hidden; everything else is shown.
-/// Filtered client-side so no composite Firestore index is required.
+/// Drafts (published == false) are hidden.
 Stream<List<DynamicArticle>> dynamicArticlesStream() {
   return FirebaseFirestore.instance
       .collection('articles')
@@ -69,126 +77,8 @@ Stream<List<DynamicArticle>> dynamicArticlesStream() {
           .toList());
 }
 
-/// A horizontal strip of the latest admin articles, shown above the built-in
-/// care sections. Renders nothing while loading, on error, or when empty — so
-/// the care page is completely unaffected if Firestore is unreachable.
-class DynamicArticlesSection extends StatelessWidget {
-  const DynamicArticlesSection({super.key, required this.accent});
-  final Color accent;
+// ─── Article screen ───────────────────────────────────────────────────────────
 
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<List<DynamicArticle>>(
-      stream: dynamicArticlesStream(),
-      builder: (context, snap) {
-        if (!snap.hasData || snap.data!.isEmpty) {
-          return const SizedBox.shrink();
-        }
-        final articles = snap.data!;
-        return Padding(
-          padding: const EdgeInsets.only(top: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 18),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEDD5C8),
-                    borderRadius: BorderRadius.circular(100),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.auto_awesome, size: 16,
-                          color: AppColors.deepChocolate),
-                      SizedBox(width: 8),
-                      Text('جديد ✨',
-                          style: TextStyle(
-                              fontFamily: 'Raleway',
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.deepChocolate)),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 230,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  itemCount: articles.length,
-                  separatorBuilder: (_, _) => const SizedBox(width: 12),
-                  itemBuilder: (context, i) => _card(context, articles[i]),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _card(BuildContext context, DynamicArticle a) {
-    const w = 280.0;
-    return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-            builder: (_) => DynamicArticleScreen(article: a, accent: accent)),
-      ),
-      child: SizedBox(
-        width: w,
-        child: Stack(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: a.imageBytes != null
-                  ? Image.memory(a.imageBytes!,
-                      width: w, height: 230, fit: BoxFit.cover)
-                  : Container(
-                      width: w,
-                      height: 230,
-                      color: accent.withValues(alpha: 0.3),
-                      alignment: Alignment.center,
-                      child: const Icon(Icons.spa,
-                          size: 48, color: Colors.white)),
-            ),
-            Positioned(
-              bottom: 12,
-              right: 12,
-              left: 12,
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.92),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Text(
-                  a.title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  textDirection: TextDirection.rtl,
-                  style: const TextStyle(
-                      fontFamily: 'Raleway',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.deepChocolate),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Full-screen view of a dynamic (admin-authored) article.
 class DynamicArticleScreen extends StatelessWidget {
   const DynamicArticleScreen({
     super.key,
@@ -201,49 +91,74 @@ class DynamicArticleScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final pageBg = Color.lerp(accent, Colors.white, 0.88)!;
+    final headingColor = Color.lerp(accent, Colors.black, 0.35)!;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: pageBg,
       body: CustomScrollView(
         slivers: [
+          // ── Cover image ──────────────────────────────────────────────────
           SliverAppBar(
-            expandedHeight: article.imageBytes != null ? 260 : 90,
+            expandedHeight: 260,
             pinned: true,
             backgroundColor: accent,
             iconTheme: const IconThemeData(color: Colors.white),
-            flexibleSpace: article.imageBytes != null
-                ? FlexibleSpaceBar(
-                    background: Image.memory(article.imageBytes!,
-                        fit: BoxFit.cover))
-                : null,
+            flexibleSpace: FlexibleSpaceBar(
+              background: article.imageBytes != null
+                  ? Image.memory(
+                      article.imageBytes!,
+                      fit: BoxFit.cover,
+                    )
+                  : Container(
+                      color: accent,
+                      child: const Icon(Icons.article,
+                          size: 80, color: Colors.white38),
+                    ),
+            ),
           ),
+
+          // ── Content ──────────────────────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 22, 20, 40),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    article.title,
-                    textAlign: TextAlign.center,
-                    textDirection: TextDirection.rtl,
-                    style: const TextStyle(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 60),
+              child: ValueListenableBuilder<String>(
+                valueListenable: LangNotifier.instance,
+                builder: (_, __, ___) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // title
+                    Text(
+                      article.title,
+                      style: TextStyle(
                         fontFamily: 'Raleway',
-                        fontSize: 25,
-                        height: 1.3,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF3D2817)),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    article.content,
-                    textDirection: TextDirection.rtl,
-                    style: const TextStyle(
-                        fontFamily: 'Raleway',
-                        fontSize: 17,
-                        height: 1.7,
-                        color: AppColors.deepChocolate),
-                  ),
-                ],
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: headingColor,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    // content paragraphs
+                    ...article.content
+                        .split('\n')
+                        .where((p) => p.trim().isNotEmpty)
+                        .map(
+                          (para) => Padding(
+                            padding: const EdgeInsets.only(bottom: 14),
+                            child: Text(
+                              para.trim(),
+                              style: const TextStyle(
+                                fontFamily: 'Raleway',
+                                fontSize: 15,
+                                height: 1.75,
+                                color: AppColors.deepChocolate,
+                              ),
+                            ),
+                          ),
+                        ),
+                  ],
+                ),
               ),
             ),
           ),
