@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../theme/app_colors.dart';
+import 'notification_history_page.dart';
 import 'notification_prefs.dart';
 
 class _SectionDef {
@@ -97,6 +98,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
                     ],
                   ),
                 ),
+                _testCard(),
+                _historyCard(),
                 Opacity(
                   opacity: allOn ? 1 : 0.4,
                   child: Column(
@@ -199,6 +202,91 @@ class _NotificationsPageState extends State<NotificationsPage> {
                     masterOn ? (v) => setState(() => s.set(v)) : null,
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _historyCard() {
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const NotificationHistoryPage()),
+      ),
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(18, 0, 18, 12),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Row(
+          children: const [
+            Expanded(
+              child: Text(
+                'أحدث الإشعارات',
+                style: TextStyle(
+                  fontFamily: 'Raleway',
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.deepChocolate,
+                ),
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios,
+                size: 16, color: AppColors.secondaryText),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _testCard() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(18, 0, 18, 12),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        children: [
+          const Expanded(
+            child: Text(
+              'إرسال إشعار تجريبي',
+              style: TextStyle(
+                fontFamily: 'Raleway',
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: AppColors.deepChocolate,
+              ),
+            ),
+          ),
+          GestureDetector(
+            onTap: () async {
+              const channel = MethodChannel('com.routiny.routiny/focus');
+              await channel.invokeMethod('showNotification', {
+                'title': 'لكِ يا جميلة 💗',
+                'body': 'أنتِ كافية تماماً كما أنتِ الآن.',
+              });
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(100),
+              ),
+              child: const Text(
+                'جربي',
+                style: TextStyle(
+                  fontFamily: 'Raleway',
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+            ),
           ),
         ],
       ),

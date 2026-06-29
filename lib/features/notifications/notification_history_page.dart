@@ -105,7 +105,7 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage> {
           alignment: Alignment.center,
           children: [
             const Text(
-              'الإشعارات',
+              'أحدث الإشعارات',
               style: TextStyle(
                 fontFamily: 'Raleway',
                 fontSize: 22,

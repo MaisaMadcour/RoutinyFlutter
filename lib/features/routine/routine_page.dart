@@ -1,9 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
 
 import '../../core/ads/interstitial_manager.dart';
-import '../../core/ads/rewarded_manager.dart';
 import '../../core/app_strings.dart';
 import '../../core/ar_dates.dart';
 import '../../core/database.dart';
@@ -30,7 +28,6 @@ class _RoutinePageState extends State<RoutinePage> {
   DateTime _visibleWeek = ArDates.startOfWeek(DateTime.now());
   List<TaskEntity> _tasks = [];
   int? _expandedId;
-  bool _fabOpen = false;
   bool _seeded = false;
   final _weekCtrl = WeekCalendarController();
 
@@ -57,35 +54,6 @@ class _RoutinePageState extends State<RoutinePage> {
       _expandedId = null;
     });
     _reload();
-  }
-
-  void _showSupportAds({int remaining = 1}) {
-    RewardedManager.instance.show(
-      onReward: () {
-        if (!mounted) return;
-        if (remaining > 1) {
-          _showSupportAds(remaining: remaining - 1);
-        } else {
-          _showSupportThankYou();
-        }
-      },
-      onUnavailable: () {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('مفيش إعلان متاح دلوقتي، جربي تاني بعدين 🙏'),
-          ),
-        );
-      },
-    );
-  }
-
-  void _showSupportThankYou() {
-    showDialog(
-      context: context,
-      barrierColor: Colors.black54,
-      builder: (_) => const _SupportThankYouDialog(),
-    );
   }
 
   Future<void> _openCreate({TaskEntity? edit}) async {
@@ -455,184 +423,13 @@ class _RoutinePageState extends State<RoutinePage> {
     return Positioned(
       right: 20,
       bottom: 24,
-      child: SizedBox(
-        width: 200,
-        height: 170,
-        child: Stack(
-          children: [
-            AnimatedPositioned(
-              duration: const Duration(milliseconds: 240),
-              curve: Curves.easeOut,
-              right: _fabOpen ? 70 : 2,
-              bottom: _fabOpen ? 80 : 2,
-              child: AnimatedOpacity(
-                opacity: _fabOpen ? 1 : 0,
-                duration: const Duration(milliseconds: 200),
-                child: _miniFab(Icons.add, () {
-                  setState(() => _fabOpen = false);
-                  _openCreate();
-                }),
-              ),
-            ),
-            AnimatedPositioned(
-              duration: const Duration(milliseconds: 280),
-              curve: Curves.easeOut,
-              right: _fabOpen ? 132 : 2,
-              bottom: _fabOpen ? 80 : 2,
-              child: AnimatedOpacity(
-                opacity: _fabOpen ? 1 : 0,
-                duration: const Duration(milliseconds: 240),
-                child: _miniFab(Icons.play_arrow, () {
-                  setState(() => _fabOpen = false);
-                  _showSupportAds();
-                }),
-              ),
-            ),
-            Positioned(
-              right: 0,
-              bottom: 0,
-              child: GestureDetector(
-                onTap: () => setState(() => _fabOpen = !_fabOpen),
-                child: AnimatedRotation(
-                  turns: _fabOpen ? 0.125 : 0,
-                  duration: const Duration(milliseconds: 180),
-                  child: Container(
-                    width: 60,
-                    height: 60,
-                    decoration: const BoxDecoration(
-                      color: AppColors.primary,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.auto_awesome,
-                        color: Colors.white, size: 30),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _miniFab(IconData icon, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 56,
-        height: 56,
-        decoration: BoxDecoration(
-          color: AppColors.primary,
-          shape: BoxShape.circle,
-          boxShadow: const [
-            BoxShadow(
-                color: Color(0x33000000), blurRadius: 8, offset: Offset(0, 4)),
-          ],
-        ),
-        child: Icon(icon, color: Colors.white, size: 26),
+      child: FloatingActionButton(
+        onPressed: _openCreate,
+        backgroundColor: AppColors.primary,
+        elevation: 4,
+        child: const Icon(Icons.add, color: Colors.white, size: 28),
       ),
     );
   }
 }
 
-class _SupportThankYouDialog extends StatefulWidget {
-  const _SupportThankYouDialog();
-
-  @override
-  State<_SupportThankYouDialog> createState() => _SupportThankYouDialogState();
-}
-
-class _SupportThankYouDialogState extends State<_SupportThankYouDialog>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-  int _playCount = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(vsync: this);
-    _ctrl.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        _playCount++;
-        if (_playCount < 3) {
-          _ctrl.forward(from: 0);
-        }
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Dialog(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Stack(
-          clipBehavior: Clip.none,
-          alignment: Alignment.center,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(28),
-              child: Image.asset('assets/images/shukran.png', fit: BoxFit.cover),
-            ),
-            Positioned(
-              bottom: 20,
-              left: 20,
-              right: 20,
-              child: TextButton(
-                onPressed: () => Navigator.pop(context),
-                style: TextButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
-                child: const Text('يسلموووو 🌷',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              ),
-            ),
-            Positioned.fill(
-              child: IgnorePointer(
-                child: Lottie.asset(
-                  'assets/lottie/confetti.json',
-                  controller: _ctrl,
-                  fit: BoxFit.cover,
-                  onLoaded: (comp) {
-                    _ctrl.duration = comp.duration;
-                    _ctrl.forward();
-                  },
-                ),
-              ),
-            ),
-            Positioned(
-              top: -12,
-              right: -12,
-              child: GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Container(
-                  width: 32,
-                  height: 32,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
-                  ),
-                  child: const Icon(Icons.close, size: 18, color: Colors.black54),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}

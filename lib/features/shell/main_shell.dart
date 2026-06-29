@@ -47,6 +47,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
 
   Future<void> _checkOpenHistory() async {
     final prefs = await SharedPreferences.getInstance();
+    await prefs.reload();
     if (prefs.getBool('open_notification_history') == true) {
       await prefs.remove('open_notification_history');
       if (mounted) {
