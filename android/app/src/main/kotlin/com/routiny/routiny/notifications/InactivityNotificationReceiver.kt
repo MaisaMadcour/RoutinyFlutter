@@ -29,9 +29,12 @@ class InactivityNotificationReceiver : BroadcastReceiver() {
             context, NOTIF_ID,
             Intent(context, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                putExtra("open_notification_history", true)
             },
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
+
+        NotificationLogger.log(context, "وحشتينا 💗", message, "inactivity")
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.launch_background)

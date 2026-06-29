@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/app_strings.dart';
 import '../../core/app_updater.dart';
 import '../../theme/app_colors.dart';
+import '../notifications/notification_history_page.dart';
 import '../routine/routine_page.dart';
 import '../timer/timer_page.dart';
 import '../tests/tests_page.dart';
@@ -22,13 +24,37 @@ class MainShell extends StatefulWidget {
   State<MainShell> createState() => _MainShellState();
 }
 
-class _MainShellState extends State<MainShell> {
+class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
     ShellController.tab.value = widget.initialTab;
-    // check Google Play for a newer version and auto-update in the background
     AppUpdater.check();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkOpenHistory());
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _checkOpenHistory();
+  }
+
+  Future<void> _checkOpenHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool('open_notification_history') == true) {
+      await prefs.remove('open_notification_history');
+      if (mounted) {
+        Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => const NotificationHistoryPage(),
+        ));
+      }
+    }
   }
 
   // Index order: 0 settings, 1 care, 2 routine, 3 timer, 4 tests.

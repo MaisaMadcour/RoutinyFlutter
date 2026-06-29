@@ -21,13 +21,18 @@ class ReminderReceiver : BroadcastReceiver() {
 
         ensureChannel(context)
 
-        // tapping the notification opens the app (routine tab)
+        // tapping the notification opens the app (notification history)
         val contentIntent = PendingIntent.getActivity(
             context, id,
             Intent(context, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                putExtra("open_notification_history", true)
             },
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        com.routiny.routiny.notifications.NotificationLogger.log(
+            context, title, "حان وقت المهمة ✨", "reminder"
         )
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)

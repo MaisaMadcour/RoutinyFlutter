@@ -129,7 +129,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            const Text('الإشعارات',
+            const Text('اعدادات الاشعارات',
                 style: TextStyle(
                     fontFamily: 'Raleway',
                     fontSize: 22,
@@ -200,40 +200,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          GestureDetector(
-            onTap: masterOn
-                ? () => ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('تم إرسال إشعار تجريبي: ${s.label}')))
-                : null,
-            child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppColors.background,
-                borderRadius: BorderRadius.circular(100),
-              ),
-              child: const Text('اختبري الآن',
-                  style: TextStyle(
-                      fontFamily: 'Raleway',
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.deepChocolate)),
-            ),
-          ),
-          const SizedBox(height: 10),
-          const Text('آخر الإشعارات (٧ أيام)',
-              style: TextStyle(
-                  fontFamily: 'Raleway',
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFFA0907F))),
-          const SizedBox(height: 6),
-          const Text('لا توجد إشعارات حديثة',
-              style: TextStyle(
-                  fontFamily: 'Raleway',
-                  fontSize: 12,
-                  color: AppColors.secondaryText)),
         ],
       ),
     );

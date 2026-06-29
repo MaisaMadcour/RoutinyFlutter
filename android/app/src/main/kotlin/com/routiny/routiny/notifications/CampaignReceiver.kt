@@ -41,10 +41,13 @@ class CampaignReceiver : BroadcastReceiver() {
         private fun post(context: Context, id: Int, title: String, body: String) {
             ensureChannel(context)
 
+            NotificationLogger.log(context, title, body, "campaign")
+
             val contentIntent = PendingIntent.getActivity(
                 context, id,
                 Intent(context, MainActivity::class.java).apply {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    putExtra("open_notification_history", true)
                 },
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
             )

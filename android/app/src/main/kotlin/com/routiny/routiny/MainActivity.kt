@@ -14,6 +14,10 @@ import io.flutter.plugin.common.MethodChannel
 import com.routiny.routiny.focus.FocusService
 import com.routiny.routiny.notifications.NotificationScheduler
 
+private const val EXTRA_OPEN_HISTORY = "open_notification_history"
+private const val FLUTTER_PREFS = "FlutterSharedPreferences"
+private const val FLUTTER_OPEN_HISTORY_KEY = "flutter.open_notification_history"
+
 class MainActivity : FlutterActivity() {
 
     private val channelName = "com.routiny.routiny/focus"
@@ -22,6 +26,20 @@ class MainActivity : FlutterActivity() {
         super.onCreate(savedInstanceState)
         NotificationScheduler.scheduleAll(this)
         requestNotificationPermission()
+        flagHistoryIfNeeded(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        flagHistoryIfNeeded(intent)
+    }
+
+    private fun flagHistoryIfNeeded(i: Intent?) {
+        if (i?.getBooleanExtra(EXTRA_OPEN_HISTORY, false) == true) {
+            getSharedPreferences(FLUTTER_PREFS, MODE_PRIVATE)
+                .edit().putBoolean(FLUTTER_OPEN_HISTORY_KEY, true).apply()
+        }
     }
 
     private fun requestNotificationPermission() {
