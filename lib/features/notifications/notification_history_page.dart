@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/app_strings.dart';
 import '../../theme/app_colors.dart';
 
 class NotificationHistoryPage extends StatefulWidget {
@@ -63,11 +64,11 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage> {
               child: Center(child: CircularProgressIndicator()),
             )
           else if (_items.isEmpty)
-            const Expanded(
+            Expanded(
               child: Center(
                 child: Text(
-                  'لا توجد إشعارات بعد',
-                  style: TextStyle(
+                  S.noNotifsYet,
+                  style: const TextStyle(
                     fontFamily: 'Raleway',
                     fontSize: 16,
                     color: AppColors.secondaryText,
@@ -104,9 +105,9 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage> {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            const Text(
-              'أحدث الإشعارات',
-              style: TextStyle(
+            Text(
+              S.latestNotifsTitle,
+              style: const TextStyle(
                 fontFamily: 'Raleway',
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
@@ -126,9 +127,9 @@ class _NotificationHistoryPageState extends State<NotificationHistoryPage> {
                 left: 12,
                 child: GestureDetector(
                   onTap: _clearAll,
-                  child: const Text(
-                    'مسح الكل',
-                    style: TextStyle(
+                  child: Text(
+                    S.clearAllBtn,
+                    style: const TextStyle(
                       fontFamily: 'Raleway',
                       fontSize: 13,
                       color: AppColors.secondaryText,

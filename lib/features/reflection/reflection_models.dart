@@ -3,6 +3,7 @@
 /// Ported verbatim from the Android Kotlin source
 /// (`com.gpstracker.routiny.reflection.ReflectionModels`).
 /// All Arabic text is preserved exactly.
+// ignore_for_file: unused_import
 
 /// المزاج العام لليوم.
 class Mood {
@@ -33,7 +34,8 @@ class Feeling {
   final String id;
   final String emoji;
   final String label;
-  const Feeling(this.id, this.emoji, this.label);
+  final String labelFusha;
+  const Feeling(this.id, this.emoji, this.label, {this.labelFusha = ''});
 }
 
 const kFeelings = <Feeling>[
@@ -65,8 +67,8 @@ const kFeelings = <Feeling>[
   Feeling('frustrated', '😤', 'محبَطة'),
   Feeling('hopeless', '😞', 'مكسورة'),
   Feeling('exhausted', '🥵', 'منهَكة'),
-  Feeling('scared', '😨', 'خايفة'),
-  Feeling('guilty', '😔', 'بالومني نفسي'),
+  Feeling('scared', '😨', 'خايفة', labelFusha: 'خائفة'),
+  Feeling('guilty', '😔', 'بالومني نفسي', labelFusha: 'مذنبة'),
 ];
 
 Feeling? feelingById(String? id) {
@@ -122,13 +124,14 @@ class Influence {
   final String id;
   final String emoji;
   final String label;
-  const Influence(this.id, this.emoji, this.label);
+  final String labelFusha;
+  const Influence(this.id, this.emoji, this.label, {this.labelFusha = ''});
 }
 
 const kInfluences = <Influence>[
-  Influence('work', '💼', 'الشغل/الدراسة'),
-  Influence('family', '👨‍👩‍👧', 'العيلة'),
-  Influence('friends', '👯', 'الأصحاب'),
+  Influence('work', '💼', 'الشغل/الدراسة', labelFusha: 'العمل/الدراسة'),
+  Influence('family', '👨‍👩‍👧', 'العيلة', labelFusha: 'العائلة'),
+  Influence('friends', '👯', 'الأصحاب', labelFusha: 'الأصدقاء'),
   Influence('money', '💵', 'أمور مالية'),
   Influence('health', '🩺', 'الصحّة'),
   Influence('body', '🧘', 'الجسم'),

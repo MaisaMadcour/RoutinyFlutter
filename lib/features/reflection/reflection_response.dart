@@ -6,6 +6,7 @@
 /// All Arabic text is preserved exactly.
 ///
 /// ignore_for_file: unused_import
+import '../../core/app_strings.dart';
 import 'reflection_models.dart';
 import 'reflection_scenarios.dart';
 
@@ -49,18 +50,12 @@ class ReflectionResponse {
 /// عنوان الإمباثي حسب المزاج.
 String _empathyTitle(String moodId) {
   switch (moodId) {
-    case 'wonderful':
-      return 'يومك حلو 💗';
-    case 'good':
-      return 'يبدو إنّك بخير 🤍';
-    case 'okay':
-      return 'يوم عادي… ومفيش غلط 🌿';
-    case 'not_good':
-      return 'يومك تقيل شوية 🫂';
-    case 'bad':
-      return 'اليوم كان صعب 💔';
-    default:
-      return '';
+    case 'wonderful': return S.empathyWonderful;
+    case 'good':      return S.empathyGood;
+    case 'okay':      return S.empathyOkay;
+    case 'not_good':  return S.empathyNotGood;
+    case 'bad':       return S.empathyBad;
+    default:          return '';
   }
 }
 
@@ -87,69 +82,50 @@ _Activity _pickActivity(
 ) {
   // each result opens a real care article that fits the feeling/mood
   if (feelings.contains('anxious') || feelings.contains('overwhelmed')) {
-    return _articleActivity('مقال يهدّيكي',
-        'كلمات بسيطة تفكّرك إن الراحة حقّك مش رفاهية.', 'care_talks_2');
+    return _articleActivity(S.actSoothingArticle, S.actSoothingDesc, 'care_talks_2');
   }
   if (feelings.contains('sad') || feelings.contains('lonely')) {
-    return _articleActivity('مقال يلمس قلبك',
-        'كلمات هتفكّرك إنّك مش لوحدك في الإحساس ده.', 'care_talks_2');
+    return _articleActivity(S.actHeartArticle, S.actHeartDesc, 'care_talks_2');
   }
   if (feelings.contains('angry') || feelings.contains('frustrated')) {
-    return _articleActivity('مقال يهدّي أفكارك',
-        'قبل ما تردّي على أي حاجة، اقري كلمات بتساعدك تهدي.',
-        'care_self_1');
+    return _articleActivity(S.actThoughtsArticle, S.actThoughtsDesc, 'care_self_1');
   }
   if (feelings.contains('guilty')) {
-    return _articleActivity('مقال عن الشعور بالذنب',
-        'مش كل ذنب حقيقي… اقري ده وكوني ألطف مع نفسك.', 'care_talks_3');
+    return _articleActivity(S.actGuiltArticle, S.actGuiltDesc, 'care_talks_3');
   }
   if (feelings.contains('unmotivated') || feelings.contains('bored')) {
-    return _articleActivity('مقال يرجّعلك حماسك',
-        'سر الاستمرار مش الحماس — اقري إزاي تكمّلي بهدوء.',
-        'care_prod_4');
+    return _articleActivity(S.actMotivationArticle, S.actMotivationDesc, 'care_prod_4');
   }
   if (feelings.contains('confused')) {
-    return _articleActivity('مقال ينظّم أفكارك',
-        'مش لازم تلاقي إجابة دلوقتي. اقري إزاي تبني روتين يناسبك.',
-        'care_prod_1');
+    return _articleActivity(S.actOrganizeArticle, S.actOrganizeDesc, 'care_prod_1');
   }
   if (feelings.contains('exhausted') || feelings.contains('tired')) {
-    return _articleActivity('مقال يديكي راحة',
-        'الراحة مش كسل — اقري ده وارتاحي من غير تأنيب.', 'care_talks_2');
+    return _articleActivity(S.actRestArticle, S.actRestDesc, 'care_talks_2');
   }
   if (feelings.contains('strong')) {
-    return _articleActivity('مقال يكمّل قوّتك',
-        'ازاي تكوني قوية وناعمة في نفس الوقت.', 'care_sleep_6');
+    return _articleActivity(S.actStrongArticle, S.actStrongDesc, 'care_sleep_6');
   }
   if (feelings.contains('grateful') ||
       feelings.contains('hopeful') ||
       feelings.contains('proud')) {
-    return _articleActivity('مقال يثبّت إحساسك الحلو',
-        'اقري كلمات بتدعمك وتخليكي نسخة أفضل من نفسك.',
-        'care_sleep_2');
+    return _articleActivity(S.actGratefulArticle, S.actGratefulDesc, 'care_sleep_2');
   }
   if (feelings.contains('calm')) {
-    return _articleActivity('مقال يكمّل هدوءك',
-        'روتين بسيط لحياة أكثر هدوء وسكينة.', 'care_self_1');
+    return _articleActivity(S.actCalmArticle, S.actCalmDesc, 'care_self_1');
   }
 
   // mood fallback
   switch (moodId) {
     case 'wonderful':
     case 'good':
-      return _articleActivity('مقال يكمّل طاقتك',
-          'قوة العادات الصغيرة في تغيير حياتك.', 'care_sleep_3');
+      return _articleActivity(S.actEnergyArticle, S.actEnergyDesc, 'care_sleep_3');
     case 'okay':
-      return _articleActivity('مقال يبدأ يومك',
-          'ازاي تبني روتين يناسبك من غير ما يضغطك.', 'care_prod_1');
+      return _articleActivity(S.actStartArticle, S.actStartDesc, 'care_prod_1');
     case 'not_good':
-      return _articleActivity('مقال يخفّف عنك',
-          'الراحة حقّك — اقري ده وكوني لطيفة مع نفسك.', 'care_talks_2');
+      return _articleActivity(S.actLightenArticle, S.actLightenDesc, 'care_talks_2');
     case 'bad':
     default:
-      return _articleActivity('مقال يحتويكي',
-          'مش لازم تنجزي حاجة النهاردة. اقري كلمات بتطمّنك.',
-          'care_talks_2');
+      return _articleActivity(S.actHoldArticle, S.actHoldDesc, 'care_talks_2');
   }
 }
 
@@ -185,13 +161,18 @@ ReflectionResponse generateReflection(
 ) {
   final scenario = _matchScenario(moodId, feelingIds, influenceIds);
   final activity = _pickActivity(moodId, feelingIds, influenceIds);
+  final useFusha = S.isFusha;
   return ReflectionResponse(
     empathyTitle: _empathyTitle(moodId),
-    dayDescription: scenario.dayDescription,
-    insight: scenario.insight,
-    advice: scenario.advice,
-    routine: scenario.routine,
-    supportMessage: scenario.supportMessage,
+    dayDescription: useFusha && scenario.dayDescriptionFusha.isNotEmpty
+        ? scenario.dayDescriptionFusha
+        : scenario.dayDescription,
+    insight: S.localize(scenario.insight, scenario.insightFusha),
+    advice: S.localize(scenario.advice, scenario.adviceFusha),
+    routine: useFusha && scenario.routineFusha.isNotEmpty
+        ? scenario.routineFusha
+        : scenario.routine,
+    supportMessage: S.localize(scenario.supportMessage, scenario.supportMessageFusha),
     activityTitle: activity.title,
     activityDescription: activity.description,
     activityEmoji: activity.emoji,

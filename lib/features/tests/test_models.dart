@@ -4,7 +4,10 @@ class TestQuestion {
   final String text;
   final List<String> options;
   final String emoji;
-  const TestQuestion(this.text, this.options, {this.emoji = ''});
+  final String textFusha;
+  final List<String> optionsFusha;
+  const TestQuestion(this.text, this.options,
+      {this.emoji = '', this.textFusha = '', this.optionsFusha = const []});
 }
 
 class TestResultTier {
@@ -37,6 +40,8 @@ class MentalTest {
   final String outcome;
   final List<TestResultTier> resultTiers;
   final List<String> levelLabels;
+  final String titleFusha;
+  final String descriptionFusha;
   const MentalTest({
     required this.id,
     required this.title,
@@ -49,5 +54,7 @@ class MentalTest {
         'هذا التقييم يساعدكِ على استكشاف ذاتكِ بعمق وفهم مشاعركِ وسلوككِ بشكل أوضح، بدون أحكام، فقط لمحة لطيفة لمساعدتكِ على التطور.',
     required this.resultTiers,
     required this.levelLabels,
+    this.titleFusha = '',
+    this.descriptionFusha = '',
   });
 }

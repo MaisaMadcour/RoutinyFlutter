@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/app_strings.dart';
 import '../../theme/app_colors.dart';
 import 'notification_history_page.dart';
 import 'notification_prefs.dart';
@@ -24,34 +25,35 @@ class NotificationsPage extends StatefulWidget {
 }
 
 class _NotificationsPageState extends State<NotificationsPage> {
-  late final List<_SectionDef> _sections = [
-    _SectionDef('الكوتات اليومية', 'كوتة لطيفة', Icons.auto_awesome,
+  // getter so strings re-read S.* on every build (language can change)
+  List<_SectionDef> get _sections => [
+    _SectionDef(S.notifQuotesLabel, S.notifQuotesDesc, Icons.auto_awesome,
         AppColors.primary, NotificationPrefs.rawTips,
         (v) => NotificationPrefs.tips = v),
     _SectionDef(
-        'تذكير العادة',
-        'احصلي على تذكيرات لإكمال عاداتكِ',
+        S.notifHabitLabel,
+        S.notifHabitDesc,
         Icons.notifications_none,
         const Color(0xFF5A8DBF),
         NotificationPrefs.rawHabit,
         (v) => NotificationPrefs.habit = v),
     _SectionDef(
-        'جلسة التركيز',
-        'إشعار شغّال أثناء جلسة البومودورو يعرض الوقت المتبقي',
+        S.notifFocusRunningLabel,
+        S.notifFocusRunningDesc,
         Icons.timer_outlined,
         AppColors.primary,
         NotificationPrefs.rawFocusRunning,
         (v) => NotificationPrefs.focusRunning = v),
     _SectionDef(
-        'انتهاء الجلسة',
-        'تنبيه لما جلسة التركيز تخلص',
+        S.notifFocusCompleteLabel,
+        S.notifFocusCompleteDesc,
         Icons.favorite_border,
         const Color(0xFF5A8DBF),
         NotificationPrefs.rawFocusCompletion,
         (v) => NotificationPrefs.focusCompletion = v),
     _SectionDef(
-        'تذكير العودة',
-        'اشعار لطيف للتذكير بفتح الابلكيشن',
+        S.notifInactivityLabel,
+        S.notifInactivityDesc,
         Icons.favorite,
         AppColors.primary,
         NotificationPrefs.rawInactivity,
@@ -80,9 +82,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   ),
                   child: Row(
                     children: [
-                      const Expanded(
-                        child: Text('جميع الإشعارات',
-                            style: TextStyle(
+                      Expanded(
+                        child: Text(S.notifAllLabel,
+                            style: const TextStyle(
                                 fontFamily: 'Raleway',
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
@@ -132,8 +134,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            const Text('اعدادات الاشعارات',
-                style: TextStyle(
+            Text(S.notifSettingsTitle,
+                style: const TextStyle(
                     fontFamily: 'Raleway',
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
@@ -222,11 +224,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
           borderRadius: BorderRadius.circular(18),
         ),
         child: Row(
-          children: const [
+          children: [
             Expanded(
               child: Text(
-                'أحدث الإشعارات',
-                style: TextStyle(
+                S.latestNotifsTitle,
+                style: const TextStyle(
                   fontFamily: 'Raleway',
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
@@ -234,7 +236,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 ),
               ),
             ),
-            Icon(Icons.arrow_forward_ios,
+            const Icon(Icons.arrow_forward_ios,
                 size: 16, color: AppColors.secondaryText),
           ],
         ),
@@ -252,10 +254,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
       ),
       child: Row(
         children: [
-          const Expanded(
+          Expanded(
             child: Text(
-              'إرسال إشعار تجريبي',
-              style: TextStyle(
+              S.testNotifLabel,
+              style: const TextStyle(
                 fontFamily: 'Raleway',
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
@@ -277,9 +279,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 color: AppColors.primary,
                 borderRadius: BorderRadius.circular(100),
               ),
-              child: const Text(
-                'جربي',
-                style: TextStyle(
+              child: Text(
+                S.testNotifBtn,
+                style: const TextStyle(
                   fontFamily: 'Raleway',
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
@@ -305,23 +307,22 @@ class _NotificationsPageState extends State<NotificationsPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            children: const [
+            children: [
               Expanded(
-                child: Text('وضعية توفير البطارية قيد التشغيل',
-                    style: TextStyle(
+                child: Text(S.batteryOptTitle,
+                    style: const TextStyle(
                         fontFamily: 'Raleway',
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
                         color: AppColors.deepChocolate)),
               ),
-              Icon(Icons.notifications_active,
+              const Icon(Icons.notifications_active,
                   color: AppColors.primary, size: 22),
             ],
           ),
           const SizedBox(height: 8),
-          const Text(
-              'تم تمكين تحسين البطارية الآن. قد لا تتلقّي إشعارات عند تمكين هذا الإعداد.',
-              style: TextStyle(
+          Text(S.batteryOptDesc,
+              style: const TextStyle(
                   fontFamily: 'Raleway',
                   fontSize: 13,
                   color: AppColors.secondaryText)),
@@ -331,8 +332,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
               const channel = MethodChannel('com.routiny.routiny/focus');
               await channel.invokeMethod('openBatterySettings');
             },
-            child: const Text('اذهبي إلى إعدادات الجهاز ←',
-                style: TextStyle(
+            child: Text(S.batteryOptLink,
+                style: const TextStyle(
                     fontFamily: 'Raleway',
                     fontSize: 14,
                     fontWeight: FontWeight.w700,

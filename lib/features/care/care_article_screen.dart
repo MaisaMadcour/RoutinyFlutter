@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/ads/interstitial_manager.dart';
+import '../../core/app_strings.dart';
 import '../../core/image_palette.dart';
 import '../../theme/app_colors.dart';
 import 'care_data.dart';
@@ -104,7 +105,7 @@ class _CareArticleScreenState extends State<CareArticleScreen> {
                   padding: const EdgeInsets.fromLTRB(22, 24, 22, 40),
                   child: Column(
                     children: [
-                      Text(card.title,
+                      Text(S.localize(card.title, card.titleFusha),
                           textAlign: TextAlign.center,
                           textDirection: TextDirection.rtl,
                           style: const TextStyle(
@@ -114,7 +115,7 @@ class _CareArticleScreenState extends State<CareArticleScreen> {
                               fontWeight: FontWeight.w700,
                               color: Color(0xFF3D2817))),
                       const SizedBox(height: 18),
-                      Text(article.intro,
+                      Text(S.localize(article.intro, article.introFusha),
                           textAlign: TextAlign.center,
                           textDirection: TextDirection.rtl,
                           style: const TextStyle(
@@ -124,9 +125,9 @@ class _CareArticleScreenState extends State<CareArticleScreen> {
                               color: AppColors.deepChocolate)),
                       for (final s in article.sections) ...[
                         const SizedBox(height: 22),
-                        _sectionHeading(s.heading),
+                        _sectionHeading(S.localize(s.heading, s.headingFusha)),
                         const SizedBox(height: 12),
-                        Text(s.body,
+                        Text(S.localize(s.body, s.bodyFusha),
                             textAlign: TextAlign.center,
                             textDirection: TextDirection.rtl,
                             style: const TextStyle(

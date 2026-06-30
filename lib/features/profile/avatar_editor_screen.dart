@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../../core/app_strings.dart';
 import '../../theme/app_colors.dart';
 
 /// Lets the user pinch-zoom and drag a picked image inside a circular frame,
@@ -63,8 +64,8 @@ class _AvatarEditorScreenState extends State<AvatarEditorScreen> {
                     icon: const Icon(Icons.close, color: Colors.white),
                   ),
                   const Spacer(),
-                  const Text('عدّلي الصورة',
-                      style: TextStyle(
+                  Text(S.editPhotoTitle,
+                      style: const TextStyle(
                           fontFamily: 'Raleway',
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
@@ -125,8 +126,8 @@ class _AvatarEditorScreenState extends State<AvatarEditorScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            const Text('قرّبي بإصبعين أو حرّكي الصورة',
-                style: TextStyle(
+            Text(S.pinchHint,
+                style: const TextStyle(
                     fontFamily: 'Raleway',
                     fontSize: 13,
                     color: Colors.white70)),
@@ -152,8 +153,8 @@ class _AvatarEditorScreenState extends State<AvatarEditorScreen> {
                           height: 22,
                           child: CircularProgressIndicator(
                               color: Colors.white, strokeWidth: 2.5))
-                      : const Text('حفظ الصورة',
-                          style: TextStyle(
+                      : Text(S.savePhoto,
+                          style: const TextStyle(
                               fontFamily: 'Raleway',
                               fontSize: 16,
                               fontWeight: FontWeight.w700,

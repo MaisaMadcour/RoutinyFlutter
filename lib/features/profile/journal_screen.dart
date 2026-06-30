@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/app_strings.dart';
 import '../../core/ar_dates.dart';
 import '../../core/database.dart';
 import '../../core/models.dart';
@@ -44,9 +45,9 @@ class _JournalScreenState extends State<JournalScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('مسح المذكرة دي؟',
+              Text(S.deleteJournalTitle,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                       fontFamily: 'Raleway',
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
@@ -62,8 +63,8 @@ class _JournalScreenState extends State<JournalScreen> {
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(25)),
                   ),
-                  child: const Text('نعم، امسحيها',
-                      style: TextStyle(
+                  child: Text(S.deleteJournalConfirm,
+                      style: const TextStyle(
                           fontFamily: 'Raleway',
                           fontWeight: FontWeight.w700,
                           color: Colors.white)),
@@ -71,8 +72,8 @@ class _JournalScreenState extends State<JournalScreen> {
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('رجوع',
-                    style: TextStyle(
+                child: Text(S.goBack,
+                    style: const TextStyle(
                         fontFamily: 'Raleway',
                         color: AppColors.secondaryText)),
               ),
@@ -99,8 +100,8 @@ class _JournalScreenState extends State<JournalScreen> {
               padding: const EdgeInsets.fromLTRB(18, 8, 18, 8),
               child: Row(
                 children: [
-                  const Text('مذكراتي',
-                      style: TextStyle(
+                  Text(S.journalTitleLabel,
+                      style: const TextStyle(
                           fontFamily: 'Raleway',
                           fontSize: 24,
                           fontWeight: FontWeight.w700,

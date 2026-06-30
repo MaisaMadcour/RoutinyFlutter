@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/app_strings.dart';
+import '../../core/lang_notifier.dart';
 import '../../core/database.dart';
 import '../../core/prefs.dart';
 import '../../theme/app_colors.dart';
@@ -49,7 +51,7 @@ class SettingsPage extends StatelessWidget {
                 _hairline(),
                 _row(context,
                     icon: Icons.format_quote,
-                    title: 'كوتة اليوم',
+                    title: S.dailyQuoteRow,
                     onTap: () => showQuoteTodayDialog(context)),
                 _hairline(),
                 _row(context,
@@ -59,6 +61,8 @@ class SettingsPage extends StatelessWidget {
                         context,
                         MaterialPageRoute(
                             builder: (_) => const BreathingExerciseScreen()))),
+                _hairline(),
+                _languageRow(context),
 
                 // ── المساعدة والتعليقات ──
                 _sectionLabel('المساعدة والتعليقات'),
@@ -89,7 +93,7 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
-  // ── curved header with a soft drop shadow (same colour as the page) ──
+  // ── curved header with a soft drop shadow ──
   Widget _header() {
     return Container(
       width: double.infinity,
@@ -119,7 +123,6 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
-  // ── right-aligned section label ──
   Widget _sectionLabel(String text) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(22, 22, 22, 10),
@@ -134,7 +137,6 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
-  // ── flat row: icon + title + chevron ──
   Widget _row(
     BuildContext context, {
     required IconData icon,
@@ -166,12 +168,108 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
+  Widget _languageRow(BuildContext context) {
+    return InkWell(
+      onTap: () => _showLanguagePicker(context),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
+        child: Row(
+          children: [
+            const Icon(Icons.language, size: 22, color: AppColors.primary),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(S.languageLabel,
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(
+                      fontFamily: 'Raleway',
+                      fontSize: 17,
+                      color: _ink)),
+            ),
+            Text(S.currentLanguage,
+                style: const TextStyle(
+                    fontFamily: 'Raleway',
+                    fontSize: 14,
+                    color: _muted)),
+            const SizedBox(width: 4),
+            const Icon(Icons.chevron_left, size: 20, color: _ink),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _hairline() => const Padding(
         padding: EdgeInsets.symmetric(horizontal: 22),
         child: Divider(height: 1, thickness: 1, color: _divider),
       );
 
   // ───────────────────────── dialogs / sheets ─────────────────────────
+
+  void _showLanguagePicker(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (_) => Dialog(
+        backgroundColor: AppColors.surface,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(S.languagePickerTitle,
+                  style: const TextStyle(
+                      fontFamily: 'Raleway',
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.chocolate)),
+              const SizedBox(height: 20),
+              _langOption(context, S.langMasri, 'masri'),
+              const SizedBox(height: 12),
+              _langOption(context, S.langFusha, 'fusha'),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _langOption(BuildContext context, String label, String lang) {
+    final isSelected = S.isFusha ? lang == 'fusha' : lang == 'masri';
+    return InkWell(
+      onTap: () {
+        LangNotifier.instance.setLang(lang);
+        Navigator.pop(context);
+      },
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.secondary : AppColors.background,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : const Color(0x1F5C3D2E),
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(label,
+                  style: TextStyle(
+                      fontFamily: 'Raleway',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: isSelected ? AppColors.primary : _ink)),
+            ),
+            if (isSelected)
+              const Icon(Icons.check_circle,
+                  size: 20, color: AppColors.primary),
+          ],
+        ),
+      ),
+    );
+  }
 
   void _showRate(BuildContext context) {
     showDialog<void>(
@@ -185,18 +283,17 @@ class SettingsPage extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('هل استمتعتِ بـ Routiny؟',
+              Text(S.rateDialogTitle,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                       fontFamily: 'Raleway',
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
                       color: AppColors.chocolate)),
               const SizedBox(height: 12),
-              const Text(
-                  'ساعدينا على التحسّن من خلال تقييمنا، وسنبذل قصارى جهدنا لجعل تجربتكِ أفضل.',
+              Text(S.rateDialogBody,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                       fontFamily: 'Raleway',
                       fontSize: 14,
                       color: AppColors.secondaryText)),
@@ -222,8 +319,8 @@ class SettingsPage extends StatelessWidget {
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(28)),
                   ),
-                  child: const Text('أعطنا ٥ نجوم',
-                      style: TextStyle(
+                  child: Text(S.rateBtn,
+                      style: const TextStyle(
                           fontFamily: 'Raleway',
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
@@ -232,8 +329,8 @@ class SettingsPage extends StatelessWidget {
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('ربما لاحقاً',
-                    style: TextStyle(
+                child: Text(S.maybeLater,
+                    style: const TextStyle(
                         fontFamily: 'Raleway',
                         color: AppColors.secondaryText)),
               ),
@@ -256,18 +353,17 @@ class SettingsPage extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('هل أنتِ متأكدة من مسح جميع البيانات؟',
+              Text(S.clearDataConfirmTitle,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                       fontFamily: 'Raleway',
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                       color: AppColors.chocolate)),
               const SizedBox(height: 12),
-              const Text(
-                  'هيتم حذف كل المهام، الإحصائيات، الصورة الشخصية، الاسم وسجل الإشعارات. مش هتقدري ترجّعيها.',
+              Text(S.clearDataConfirmBody,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                       fontFamily: 'Raleway',
                       fontSize: 14,
                       color: AppColors.secondaryText)),
@@ -282,15 +378,15 @@ class SettingsPage extends StatelessWidget {
                     if (!context.mounted) return;
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('تم مسح كل البيانات')));
+                        SnackBar(content: Text(S.dataClearedMsg)));
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.danger,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(27)),
                   ),
-                  child: const Text('نعم',
-                      style: TextStyle(
+                  child: Text(S.yes,
+                      style: const TextStyle(
                           fontFamily: 'Raleway',
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
@@ -299,8 +395,8 @@ class SettingsPage extends StatelessWidget {
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('لا',
-                    style: TextStyle(
+                child: Text(S.no,
+                    style: const TextStyle(
                         fontFamily: 'Raleway',
                         color: AppColors.secondaryText)),
               ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/app_strings.dart';
 import '../../core/image_palette.dart';
 import '../../theme/app_colors.dart';
 import 'test_models.dart';
@@ -75,7 +76,7 @@ class _TestIntroScreenState extends State<TestIntroScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Text(
-                        test.title,
+                        S.localize(test.title, test.titleFusha),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontFamily: 'Raleway',
@@ -86,7 +87,7 @@ class _TestIntroScreenState extends State<TestIntroScreen> {
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        test.description,
+                        S.localize(test.description, test.descriptionFusha),
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           fontFamily: 'Raleway',

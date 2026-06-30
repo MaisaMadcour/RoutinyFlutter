@@ -156,15 +156,15 @@ class _ReflectionActivityState extends State<ReflectionActivity> {
       padding: const EdgeInsets.all(20),
       child: Column(
         children: [
-          const Text('ما حالتك المزاجية اليوم؟',
-              style: TextStyle(
+          Text(S.moodStateQuestion,
+              style: const TextStyle(
                   fontFamily: 'Raleway',
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
                   color: AppColors.deepChocolate)),
           const SizedBox(height: 6),
-          const Text('اختاري الأقرب لإحساسك',
-              style: TextStyle(
+          Text(S.chooseMoodHint,
+              style: const TextStyle(
                   fontFamily: 'Raleway',
                   fontSize: 13,
                   color: AppColors.secondaryText)),
@@ -243,7 +243,7 @@ class _ReflectionActivityState extends State<ReflectionActivity> {
                   selected.add(i);
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('أقصى 3 اختيارات')));
+                      SnackBar(content: Text(S.maxChoicesMsg)));
                 }
               });
             },
@@ -291,7 +291,7 @@ class _ReflectionActivityState extends State<ReflectionActivity> {
                   color: AppColors.secondaryText)),
           const SizedBox(height: 12),
           _chips<Feeling>(feelings, (f) => f.id, (f) => f.emoji,
-              (f) => f.label, _feelings),
+              (f) => S.localize(f.label, f.labelFusha), _feelings),
           const SizedBox(height: 24),
           Text(S.influencesQuestion,
               style: const TextStyle(
@@ -306,7 +306,7 @@ class _ReflectionActivityState extends State<ReflectionActivity> {
                   color: AppColors.secondaryText)),
           const SizedBox(height: 12),
           _chips<Influence>(influences, (f) => f.id, (f) => f.emoji,
-              (f) => f.label, _influences),
+              (f) => S.localize(f.label, f.labelFusha), _influences),
         ],
       ),
     );
@@ -369,9 +369,9 @@ class _ReflectionActivityState extends State<ReflectionActivity> {
                 const Icon(Icons.lock_outline,
                     size: 18, color: AppColors.primary),
                 const SizedBox(width: 10),
-                const Expanded(
-                  child: Text('احتفظي بمذكراتي عشان أرجعلها بعدين 🤍',
-                      style: TextStyle(
+                Expanded(
+                  child: Text(S.keepJournalHint,
+                      style: const TextStyle(
                           fontFamily: 'Raleway',
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -462,13 +462,13 @@ class _ReflectionActivityState extends State<ReflectionActivity> {
       'bad': '💔',
     };
     const url = 'https://play.google.com/store/apps/details?id=com.routiny.app';
-    final text = 'انعكاسي النهاردة على روتيني 🌸\n'
+    final text = '${S.reflectionShareIntro}\n'
         '${r.empathyTitle}\n\n'
         '${r.insight}\n\n'
         '📲 حمّلي روتيني: $url';
     showShareResultSheet(
       context,
-      headline: 'حاسة بإيه النهاردة 🌸',
+      headline: S.reflectionShareHeadline,
       resultTitle: r.empathyTitle,
       details: r.insight,
       emoji: moodEmoji[_mood] ?? '🌸',
@@ -486,11 +486,11 @@ class _ReflectionActivityState extends State<ReflectionActivity> {
         const SizedBox(height: 22),
         Row(
           mainAxisAlignment: MainAxisAlignment.start, // start = right in RTL
-          children: const [
-            Text('✨', style: TextStyle(fontSize: 14)),
-            SizedBox(width: 4),
-            Text('وصف يومك',
-                style: TextStyle(
+          children: [
+            const Text('✨', style: TextStyle(fontSize: 14)),
+            const SizedBox(width: 4),
+            Text(S.describeDay,
+                style: const TextStyle(
                     fontFamily: 'Raleway',
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
@@ -540,8 +540,8 @@ class _ReflectionActivityState extends State<ReflectionActivity> {
           child: OutlinedButton.icon(
             onPressed: () => _shareReflection(r),
             icon: const Icon(Icons.ios_share, size: 18, color: _darkBtn),
-            label: const Text('شاركي نتيجتك 📸',
-                style: TextStyle(
+            label: Text(S.shareResultBtn,
+                style: const TextStyle(
                     fontFamily: 'Raleway',
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
@@ -564,8 +564,8 @@ class _ReflectionActivityState extends State<ReflectionActivity> {
                   borderRadius: BorderRadius.circular(100)),
               elevation: 0,
             ),
-            child: const Text('تمام 💗',
-                style: TextStyle(
+            child: Text(S.okBtn,
+                style: const TextStyle(
                     fontFamily: 'Raleway',
                     fontSize: 17,
                     fontWeight: FontWeight.w700,

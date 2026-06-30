@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/app_strings.dart';
 import '../../core/image_palette.dart';
 import '../../theme/app_colors.dart';
 import 'test_data.dart';
@@ -53,21 +54,21 @@ class TestsPage extends StatelessWidget {
       child: SafeArea(
         bottom: false,
         child: Column(
-          children: const [
+          children: [
             Text(
-              'اختبري نفسك واكتشفيها',
+              S.testsHeader,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                   fontFamily: 'Raleway',
                   fontSize: 19,
                   fontWeight: FontWeight.w700,
                   color: AppColors.deepChocolate),
             ),
-            SizedBox(height: 3),
+            const SizedBox(height: 3),
             Text(
-              'قلبك بيقول إيه',
+              S.testsSubheader,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                   fontFamily: 'Raleway',
                   fontSize: 12,
                   color: AppColors.secondaryText),
@@ -148,7 +149,7 @@ class _TestCardState extends State<_TestCard> {
             Padding(
               padding: const EdgeInsets.fromLTRB(10, 8, 10, 12),
               child: Text(
-                widget.test.title,
+                S.localize(widget.test.title, widget.test.titleFusha),
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,

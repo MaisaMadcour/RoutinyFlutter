@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/ads/rewarded_manager.dart';
+import '../../core/app_strings.dart';
 import '../../core/ar_dates.dart';
 import '../../core/database.dart';
 import '../../core/models.dart';
@@ -47,22 +48,22 @@ class _ProfilePageState extends State<ProfilePage> {
         backgroundColor: AppColors.surface,
         shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('افتحي مذكراتي 🔓',
-            style: TextStyle(
+        title: Text(S.openJournalBtn,
+            style: const TextStyle(
                 fontFamily: 'Raleway',
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
                 color: AppColors.deepChocolate)),
-        content: const Text(
-          'شوفي إعلان قصير وافتحي مذكراتك 🌸',
-          style: TextStyle(
+        content: Text(
+          S.watchAdDialogBody,
+          style: const TextStyle(
               fontFamily: 'Raleway', fontSize: 14, color: AppColors.secondaryText),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('مش دلوقتي',
-                style: TextStyle(
+            child: Text(S.notNow,
+                style: const TextStyle(
                     fontFamily: 'Raleway', color: AppColors.secondaryText)),
           ),
           TextButton(
@@ -75,16 +76,13 @@ class _ProfilePageState extends State<ProfilePage> {
                 onUnavailable: () {
                   if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                          'محتاجة اتصال بالإنترنت عشان تشوفي إعلان وتفتحي مذكراتك 🌐'),
-                    ),
+                    SnackBar(content: Text(S.adUnavailableMsg)),
                   );
                 },
               );
             },
-            child: const Text('شوفي إعلان وافتحي',
-                style: TextStyle(
+            child: Text(S.watchAdBtn,
+                style: const TextStyle(
                     fontFamily: 'Raleway',
                     fontWeight: FontWeight.w700,
                     color: AppColors.primary)),
@@ -138,8 +136,8 @@ class _ProfilePageState extends State<ProfilePage> {
           children: [
             Row(
               children: [
-                const Text('الملف الشخصي',
-                    style: TextStyle(
+                Text(S.profileTitle,
+                    style: const TextStyle(
                         fontFamily: 'Raleway',
                         fontSize: 24,
                         fontWeight: FontWeight.w700,
@@ -178,15 +176,15 @@ class _ProfilePageState extends State<ProfilePage> {
                 onTap: () => setState(() => _editingName = !_editingName),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: const [
-                    Text('تعديل الاسم',
-                        style: TextStyle(
+                  children: [
+                    Text(S.editNameLabel,
+                        style: const TextStyle(
                             fontFamily: 'Raleway',
                             fontSize: 20,
                             fontWeight: FontWeight.w700,
                             color: AppColors.chocolate)),
-                    SizedBox(width: 6),
-                    Icon(Icons.edit, size: 20, color: AppColors.chocolate),
+                    const SizedBox(width: 6),
+                    const Icon(Icons.edit, size: 20, color: AppColors.chocolate),
                   ],
                 ),
               ),
@@ -266,10 +264,10 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             const SizedBox(height: 22),
             // ── tasks-completed calendar ──
-            const Align(
+            Align(
               alignment: AlignmentDirectional.centerStart,
-              child: Text('احصائيات ايام انجاز المهام',
-                  style: TextStyle(
+              child: Text(S.taskStatsTitle,
+                  style: const TextStyle(
                       fontFamily: 'Raleway',
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
@@ -289,10 +287,10 @@ class _ProfilePageState extends State<ProfilePage> {
             _moodStats(),
             const SizedBox(height: 22),
             // ── breathing calendar ──
-            const Align(
+            Align(
               alignment: AlignmentDirectional.centerStart,
-              child: Text('احصائيات التنفس',
-                  style: TextStyle(
+              child: Text(S.breathingStatsTitle,
+                  style: const TextStyle(
                       fontFamily: 'Raleway',
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
@@ -324,9 +322,9 @@ class _ProfilePageState extends State<ProfilePage> {
                     const Icon(Icons.menu_book_outlined,
                         size: 22, color: AppColors.primary),
                     const SizedBox(width: 12),
-                    const Expanded(
-                      child: Text('مذكراتي',
-                          style: TextStyle(
+                    Expanded(
+                      child: Text(S.journalTitleLabel,
+                          style: const TextStyle(
                               fontFamily: 'Raleway',
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
@@ -402,19 +400,13 @@ class _ProfilePageState extends State<ProfilePage> {
     final isCurrentMonth = _moodMonth.year == DateTime.now().year &&
         _moodMonth.month == DateTime.now().month;
 
-    String totalLabel() {
-      if (total == 0) return 'مفيش إحساسات';
-      if (total == 1) return 'إحساس واحد';
-      if (total == 2) return 'إحساسين';
-      if (total <= 10) return '$total إحساسات';
-      return '$total إحساس';
-    }
+    String totalLabel() => S.moodTotal(total);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('احصائيات احساسك',
-            style: TextStyle(
+        Text(S.moodStatsTitle,
+            style: const TextStyle(
                 fontFamily: 'Raleway',
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
@@ -474,10 +466,9 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
               const SizedBox(height: 12),
               if (total == 0)
-                const Text(
-                    'مفيش إحساسات في الشهر ده — جربي تسجلي إحساسك من صفحة العناية 🤍',
+                Text(S.moodStatsEmpty,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: const TextStyle(
                         fontFamily: 'Raleway',
                         fontSize: 13,
                         color: AppColors.secondaryText))

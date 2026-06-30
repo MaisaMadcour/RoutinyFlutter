@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../core/app_strings.dart';
 import '../../core/ar_dates.dart';
 import '../../core/database.dart';
 import '../../core/models.dart';
@@ -128,8 +129,8 @@ class _FocusStatsScreenState extends State<FocusStatsScreen> {
               ],
             ),
             const SizedBox(height: 8),
-            const Text('إحصائيات التركيز',
-                style: TextStyle(
+            Text(S.focusStatsTitle,
+                style: const TextStyle(
                     fontFamily: 'Raleway',
                     fontSize: 28,
                     fontWeight: FontWeight.w700,
@@ -143,8 +144,8 @@ class _FocusStatsScreenState extends State<FocusStatsScreen> {
             const SizedBox(height: 14),
             _card2(totalCounts, totalMinutes),
             const SizedBox(height: 20),
-            const Text('جدول التركيز الزمني',
-                style: TextStyle(
+            Text(S.focusTimeChart,
+                style: const TextStyle(
                     fontFamily: 'Raleway',
                     fontSize: 16,
                     fontWeight: FontWeight.w700,

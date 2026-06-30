@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/app_strings.dart';
 import '../../core/image_palette.dart';
 import '../../theme/app_colors.dart';
 import 'test_models.dart';
@@ -155,7 +156,7 @@ class _TestQuestionScreenState extends State<TestQuestionScreen> {
                                 Text(q.emoji,
                                     style: const TextStyle(fontSize: 40)),
                                 const SizedBox(height: 12),
-                                Text(q.text,
+                                Text(S.localize(q.text, q.textFusha),
                                     textAlign: TextAlign.center,
                                     style: const TextStyle(
                                         fontFamily: 'Raleway',
@@ -169,7 +170,10 @@ class _TestQuestionScreenState extends State<TestQuestionScreen> {
                           const SizedBox(height: 18),
                           // ── answer options (tap = auto-advance) ──
                           for (var i = 0; i < q.options.length; i++)
-                            _option(i, q.options[i]),
+                            _option(i, S.localize(
+                              q.options[i],
+                              q.optionsFusha.length > i ? q.optionsFusha[i] : null,
+                            )),
                           const SizedBox(height: 20),
                         ],
                       ),

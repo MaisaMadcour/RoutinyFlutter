@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/app_strings.dart';
 import '../../core/task_icons.dart';
 import '../../theme/app_colors.dart';
 
@@ -37,8 +38,8 @@ class _IconPickerSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          const Text('اختر أيقونة',
-              style: TextStyle(
+          Text(S.chooseIcon,
+              style: const TextStyle(
                   fontFamily: 'Raleway',
                   fontSize: 16,
                   fontWeight: FontWeight.w700,

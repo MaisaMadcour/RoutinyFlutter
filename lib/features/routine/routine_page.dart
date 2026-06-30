@@ -285,8 +285,8 @@ class _RoutinePageState extends State<RoutinePage> {
                     ),
                     borderRadius: BorderRadius.circular(18),
                   ),
-                  child: const Text('اليوم',
-                      style: TextStyle(
+                  child: Text(S.todayBtn,
+                      style: const TextStyle(
                           fontFamily: 'Raleway',
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
@@ -312,8 +312,8 @@ class _RoutinePageState extends State<RoutinePage> {
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 4),
       child: Row(
         children: [
-          const Text('روتيني اليوم',
-              style: TextStyle(
+          Text(S.routineToday,
+              style: const TextStyle(
                   fontFamily: 'Raleway',
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
@@ -347,11 +347,11 @@ class _RoutinePageState extends State<RoutinePage> {
         child: Center(child: CircularProgressIndicator()),
       );
     } else if (_tasks.isEmpty) {
-      body = const Padding(
-        padding: EdgeInsets.only(top: 60),
+      body = Padding(
+        padding: const EdgeInsets.only(top: 60),
         child: Center(
-          child: Text('لا توجد مهام لهذا اليوم',
-              style: TextStyle(
+          child: Text(S.noTasksToday,
+              style: const TextStyle(
                   fontFamily: 'Raleway',
                   fontSize: 14,
                   color: AppColors.secondaryText)),

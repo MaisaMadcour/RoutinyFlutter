@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../core/app_strings.dart';
 import '../../theme/app_colors.dart';
 import '../reflection/reflection_activity.dart';
 import '../water/water_glass.dart';
@@ -266,9 +267,9 @@ class _CarePageState extends State<CarePage> {
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Text(
-                    'حاسة بإيه النهاردة؟',
+                    S.reflectionCardTitle,
                     style: TextStyle(
                         fontFamily: 'Raleway',
                         fontSize: 17,
@@ -277,7 +278,7 @@ class _CarePageState extends State<CarePage> {
                   ),
                   SizedBox(height: 5),
                   Text(
-                    'خدي دقيقتين تشوفي شعورك إزاي النهارده',
+                    S.reflectionCardSubtitle,
                     style: TextStyle(
                         fontFamily: 'Raleway',
                         fontSize: 13,
@@ -377,7 +378,7 @@ class _CarePageState extends State<CarePage> {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    section.title,
+                    S.localize(section.title, section.titleFusha),
                     style: const TextStyle(
                         fontFamily: 'Raleway',
                         fontSize: 15,
