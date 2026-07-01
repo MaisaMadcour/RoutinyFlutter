@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../core/app_strings.dart';
@@ -7,11 +9,36 @@ import 'test_data.dart';
 import 'test_intro_screen.dart';
 import 'test_models.dart';
 
-class TestsPage extends StatelessWidget {
+class TestsPage extends StatefulWidget {
   const TestsPage({super.key});
 
   @override
+  State<TestsPage> createState() => _TestsPageState();
+}
+
+class _TestsPageState extends State<TestsPage> {
+  List<MentalTest> _firestoreTests = [];
+  StreamSubscription<List<MentalTest>>? _sub;
+
+  @override
+  void initState() {
+    super.initState();
+    _sub = firestoreTestsStream().listen((tests) {
+      if (mounted) setState(() => _firestoreTests = tests);
+    });
+  }
+
+  @override
+  void dispose() {
+    _sub?.cancel();
+    super.dispose();
+  }
+
+  List<MentalTest> get _allTests => [..._firestoreTests, ...mentalTests];
+
+  @override
   Widget build(BuildContext context) {
+    final tests = _allTests;
     return ColoredBox(
       color: AppColors.background,
       child: Column(
@@ -27,8 +54,8 @@ class TestsPage extends StatelessWidget {
                 mainAxisSpacing: 0,
                 crossAxisSpacing: 0,
               ),
-              itemCount: mentalTests.length,
-              itemBuilder: (context, i) => _TestCard(test: mentalTests[i]),
+              itemCount: tests.length,
+              itemBuilder: (context, i) => _TestCard(test: tests[i]),
             ),
           ),
         ],
@@ -89,21 +116,25 @@ class _TestCard extends StatefulWidget {
 }
 
 class _TestCardState extends State<_TestCard> {
-  // card/title background = lighten(edge, 0.55) — matches Android TestsGridAdapter
   late Color _cardBg;
 
   @override
   void initState() {
     super.initState();
     _cardBg = AppColors.parseHex(widget.test.cardBgColor);
-    ImagePalette.from(
-      'assets/images/${widget.test.coverAsset}.jpg',
-      fallback: AppColors.parseHex(widget.test.cardBgColor),
-    ).then((edge) {
-      if (mounted) {
-        setState(() => _cardBg = ImagePalette.lighten(edge, 0.55));
-      }
-    });
+    final fallback = AppColors.parseHex(widget.test.cardBgColor);
+    void applyEdge(Color edge) {
+      if (mounted) setState(() => _cardBg = ImagePalette.lighten(edge, 0.55));
+    }
+    if (widget.test.coverBytes != null) {
+      ImagePalette.fromBytes(widget.test.coverBytes!, fallback: fallback)
+          .then(applyEdge);
+    } else if (widget.test.coverAsset.isNotEmpty) {
+      ImagePalette.from(
+        'assets/images/${widget.test.coverAsset}.jpg',
+        fallback: fallback,
+      ).then(applyEdge);
+    }
   }
 
   @override
@@ -122,7 +153,6 @@ class _TestCardState extends State<_TestCard> {
         decoration: BoxDecoration(
           color: _cardBg,
           borderRadius: BorderRadius.circular(r),
-          // a soft frame in a darker shade of the card's own colour
           border: Border.all(
             color: ImagePalette.darken(_cardBg, 0.15),
             width: 1.5,
@@ -132,20 +162,25 @@ class _TestCardState extends State<_TestCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ── illustration ──────────────────────────────────────
+            // ── illustration ──────────────────────────────────
             Expanded(
               child: ClipRRect(
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(r),
                   topRight: Radius.circular(r),
                 ),
-                child: Image.asset(
-                  'assets/images/${widget.test.coverAsset}.jpg',
-                  fit: BoxFit.cover,
-                ),
+                child: widget.test.coverBytes != null
+                    ? Image.memory(
+                        widget.test.coverBytes!,
+                        fit: BoxFit.cover,
+                      )
+                    : Image.asset(
+                        'assets/images/${widget.test.coverAsset}.jpg',
+                        fit: BoxFit.cover,
+                      ),
               ),
             ),
-            // ── title — sits on the lightened card background ─────
+            // ── title ─────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(10, 8, 10, 12),
               child: Text(

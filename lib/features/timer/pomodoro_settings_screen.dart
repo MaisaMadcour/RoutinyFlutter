@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../theme/app_colors.dart';
+import 'focus_notification.dart';
 import 'focus_settings.dart';
 
 class PomodoroSettingsScreen extends StatefulWidget {
@@ -156,6 +157,12 @@ class _PomodoroSettingsScreenState extends State<PomodoroSettingsScreen> {
                 FocusSettings.timerReminders = v;
               }
             });
+          }),
+          const Divider(height: 1, indent: 40, color: Color(0xFFEBE0D6)),
+          _switchRow(Icons.do_not_disturb_on_outlined, 'عدم الإزعاج',
+              FocusSettings.dndEnabled, (v) async {
+            if (v) await FocusNotification.requestDndAccess();
+            setState(() => FocusSettings.dndEnabled = v);
           }),
         ],
       ),

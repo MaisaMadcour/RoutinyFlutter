@@ -362,19 +362,22 @@ class _FocusRunningScreenState extends State<FocusRunningScreen>
         );
     return Directionality(
       textDirection: TextDirection.ltr,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(mm[0], style: digit(const Color(0xFFE8607E))),
-          Text(mm[1], style: digit(const Color(0xFF3FA89B))),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6),
-            child: Text(':',
-                style: digit(Colors.white).copyWith(fontSize: colonSize)),
-          ),
-          Text(ss[0], style: digit(const Color(0xFFE8607E))),
-          Text(ss[1], style: digit(const Color(0xFF3FA89B))),
-        ],
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(mm[0], style: digit(const Color(0xFFE8607E))),
+            Text(mm[1], style: digit(const Color(0xFF3FA89B))),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Text(':',
+                  style: digit(Colors.white).copyWith(fontSize: colonSize)),
+            ),
+            Text(ss[0], style: digit(const Color(0xFFE8607E))),
+            Text(ss[1], style: digit(const Color(0xFF3FA89B))),
+          ],
+        ),
       ),
     );
   }

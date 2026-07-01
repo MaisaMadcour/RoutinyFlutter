@@ -41,6 +41,7 @@ class FocusService : Service() {
     private var isFinalPhase: Boolean = true
     private var wakeLock: android.os.PowerManager.WakeLock? = null
     private var montserrat: Typeface? = null
+    private var savedInterruptionFilter = NotificationManager.INTERRUPTION_FILTER_ALL
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -81,6 +82,7 @@ class FocusService : Service() {
         remainingMs = seconds * 1000L
 
         if (foreground) {
+            applyDnd(enable = true)
             val ok = runCatching {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                     startForeground(
@@ -132,8 +134,26 @@ class FocusService : Service() {
     private fun stopEverything() {
         timer?.cancel(); timer = null
         releaseWakeLock()
+        applyDnd(enable = false)
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
+    }
+
+    private fun applyDnd(enable: Boolean) {
+        runCatching {
+            val prefs = getSharedPreferences("FlutterSharedPreferences", MODE_PRIVATE)
+            val dndPref = prefs.getBoolean("flutter.fs_dnd_enabled", false)
+            if (!dndPref) return
+            val nm = notifyManager()
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return
+            if (!nm.isNotificationPolicyAccessGranted) return
+            if (enable) {
+                savedInterruptionFilter = nm.currentInterruptionFilter
+                nm.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_PRIORITY)
+            } else {
+                nm.setInterruptionFilter(savedInterruptionFilter)
+            }
+        }
     }
 
     /**
@@ -167,7 +187,7 @@ class FocusService : Service() {
             )
             val title = if (isPomodoro) "خلصت جلسة البومودورو 🍅" else "خلص التايم ⏱️"
             val notif = NotificationCompat.Builder(this, COMPLETION_CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_focus_lightning)
+                .setSmallIcon(R.drawable.ic_timer_alarm)
                 .setColor(ContextCompat.getColor(this, R.color.routiny_primary))
                 .setContentTitle(title)
                 .setContentText("أحسنت! خد استراحة قصيرة دلوقتي.")
@@ -231,7 +251,7 @@ class FocusService : Service() {
         }
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_focus_lightning)
+            .setSmallIcon(R.drawable.ic_timer_alarm)
             .setColor(ContextCompat.getColor(this, R.color.routiny_primary))
             .setContentTitle("$time ⏳") // fallback for OSes ignoring custom view
             .setContentText(info)

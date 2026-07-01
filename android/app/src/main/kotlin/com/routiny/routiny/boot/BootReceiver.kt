@@ -11,6 +11,7 @@ class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
         NotificationScheduler.scheduleAll(context)
+        com.routiny.routiny.water.WaterReminderScheduler.scheduleNext(context)
         // Re-arm one-off campaign alarms (lost on reboot). Past times are ignored.
         rescheduleCampaigns(context)
     }

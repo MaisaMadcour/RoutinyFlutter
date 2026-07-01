@@ -29,6 +29,7 @@ class DynamicArticle {
   final String contentMasri;
   final String contentFusha;
   final Uint8List? imageBytes;
+  final DateTime? createdAt;
 
   const DynamicArticle({
     required this.id,
@@ -38,7 +39,13 @@ class DynamicArticle {
     required this.contentMasri,
     required this.contentFusha,
     this.imageBytes,
+    this.createdAt,
   });
+
+  bool get isNew {
+    if (createdAt == null) return false;
+    return DateTime.now().difference(createdAt!).inDays < 7;
+  }
 
   String get title {
     final lang = LangNotifier.instance.value;
@@ -67,6 +74,7 @@ class DynamicArticle {
         contentMasri: (d['content_masri'] as String?) ?? (d['content'] as String?) ?? '',
         contentFusha: (d['content_fusha'] as String?) ?? (d['content'] as String?) ?? '',
         imageBytes: bytes,
+        createdAt: (d['createdAt'] as Timestamp?)?.toDate(),
       );
     } catch (_) {
       return null;
@@ -74,7 +82,17 @@ class DynamicArticle {
   }
 }
 
-// ─── Stream ───────────────────────────────────────────────────────────────────
+// ─── Dynamic section (new admin-defined category) ────────────────────────────
+
+class DynamicSection {
+  final String key;
+  final String label;
+  final List<DynamicArticle> articles;
+  const DynamicSection(
+      {required this.key, required this.label, required this.articles});
+}
+
+// ─── Streams ──────────────────────────────────────────────────────────────────
 
 /// Streams admin-authored articles from Firestore, newest first.
 /// Drafts (published == false) are hidden.
@@ -88,6 +106,40 @@ Stream<List<DynamicArticle>> dynamicArticlesStream() {
           .map(DynamicArticle.fromDoc)
           .whereType<DynamicArticle>()
           .toList());
+}
+
+/// Streams categories that were added from the admin app (not hardcoded in the
+/// app) together with their published articles. Each fires a new fetch of
+/// articles whenever the category list changes.
+/// New categories appear FIRST (lowest order value = added most recently).
+Stream<List<DynamicSection>> dynamicSectionsStream() {
+  return FirebaseFirestore.instance
+      .collection('article_categories')
+      .orderBy('order')
+      .snapshots()
+      .asyncMap((catSnap) async {
+    // Only process categories that are NOT already mapped to static sections
+    final newCats =
+        catSnap.docs.where((d) => !_adminKeyToTitle.containsKey(d.id)).toList();
+    if (newCats.isEmpty) return <DynamicSection>[];
+
+    final artSnap = await FirebaseFirestore.instance
+        .collection('articles')
+        .where('published', isEqualTo: true)
+        .get();
+
+    return newCats.map((catDoc) {
+      final label = (catDoc.data()['label'] as String?) ?? catDoc.id;
+      // For unmapped keys: DynamicArticle.section == rawSection == catDoc.id
+      final catArticles = artSnap.docs
+          .where((d) => (d.data()['section'] as String?) == catDoc.id)
+          .map(DynamicArticle.fromDoc)
+          .whereType<DynamicArticle>()
+          .toList();
+      return DynamicSection(
+          key: catDoc.id, label: label, articles: catArticles);
+    }).where((s) => s.articles.isNotEmpty).toList();
+  });
 }
 
 // ─── Article screen ───────────────────────────────────────────────────────────

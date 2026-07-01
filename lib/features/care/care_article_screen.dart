@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 
-import '../../core/ads/interstitial_manager.dart';
 import '../../core/app_strings.dart';
 import '../../core/image_palette.dart';
 import '../../theme/app_colors.dart';
@@ -271,14 +270,17 @@ class _CareArticleScreenState extends State<CareArticleScreen> {
         children: [
           Icon(Icons.favorite_rounded, size: 14, color: _headingAccent),
           const SizedBox(width: 8),
-          Text(
-            text,
-            textDirection: TextDirection.rtl,
-            style: const TextStyle(
-                fontFamily: 'Raleway',
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: AppColors.deepChocolate),
+          Flexible(
+            child: Text(
+              text,
+              textDirection: TextDirection.rtl,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                  fontFamily: 'Raleway',
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.deepChocolate),
+            ),
           ),
         ],
       ),
@@ -308,11 +310,6 @@ class _CareArticleScreenState extends State<CareArticleScreen> {
 
   // interstitial on article close (cap 3 min), then pop
   void _closeWithAd() {
-    InterstitialManager.instance.showIfReady(
-      InterstitialManager.ctxArticleClose,
-      onDone: () {
-        if (mounted) Navigator.pop(context);
-      },
-    );
+    Navigator.pop(context);
   }
 }

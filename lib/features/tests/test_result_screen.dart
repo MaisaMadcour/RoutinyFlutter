@@ -1,6 +1,9 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../core/app_strings.dart';
 import '../../core/database.dart';
 import '../../core/image_palette.dart';
 import '../../core/models.dart';
@@ -32,6 +35,8 @@ class _TestResultScreenState extends State<TestResultScreen> {
 
   TestResultTier get _tier => widget.test.resultTiers[widget.tierIndex];
 
+  // For Firestore tests, prefer in-memory bytes; fall back to local asset name.
+  Uint8List? get _tierImageBytes => _tier.imageBytes ?? widget.test.coverBytes;
   String get _coverAsset =>
       _tier.imageAsset.isNotEmpty ? _tier.imageAsset : widget.test.coverAsset;
 
@@ -51,10 +56,14 @@ class _TestResultScreenState extends State<TestResultScreen> {
   void initState() {
     super.initState();
     _edge = AppColors.parseHex(widget.test.cardBgColor);
-    ImagePalette.from(
-      'assets/images/$_coverAsset.jpg',
-      fallback: AppColors.parseHex(widget.test.cardBgColor),
-    ).then((c) { if (mounted) setState(() => _edge = c); });
+    final fallback = AppColors.parseHex(widget.test.cardBgColor);
+    if (widget.test.coverBytes != null) {
+      ImagePalette.fromBytes(widget.test.coverBytes!, fallback: fallback)
+          .then((c) { if (mounted) setState(() => _edge = c); });
+    } else if (widget.test.coverAsset.isNotEmpty) {
+      ImagePalette.from('assets/images/$_coverAsset.jpg', fallback: fallback)
+          .then((c) { if (mounted) setState(() => _edge = c); });
+    }
   }
 
   @override
@@ -76,7 +85,7 @@ class _TestResultScreenState extends State<TestResultScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            Text(widget.test.title,
+            Text(S.localize(widget.test.title, widget.test.titleFusha),
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                     fontFamily: 'Raleway',
@@ -93,8 +102,11 @@ class _TestResultScreenState extends State<TestResultScreen> {
                 borderRadius: BorderRadius.circular(24),
               ),
               clipBehavior: Clip.antiAlias,
-              child: Image.asset('assets/images/$_coverAsset.jpg',
-                  width: double.infinity, fit: BoxFit.fitWidth),
+              child: _tierImageBytes != null
+                  ? Image.memory(_tierImageBytes!,
+                      width: double.infinity, fit: BoxFit.fitWidth)
+                  : Image.asset('assets/images/$_coverAsset.jpg',
+                      width: double.infinity, fit: BoxFit.fitWidth),
             ),
 
             // ── levels card ──────────────────────────────────────────────
@@ -110,29 +122,39 @@ class _TestResultScreenState extends State<TestResultScreen> {
             _sectionCard(
               emoji: '📋',
               title: 'تفاصيل نتيجتك',
-              child: _bodyText(tier.details),
+              child: _bodyText(S.localize(tier.details, tier.detailsFusha)),
             ),
 
-            if (tier.traits.isNotEmpty)
+            if (tier.traits.isNotEmpty || tier.traitsFusha.isNotEmpty)
               _connectedCard(_sectionCard(
                 emoji: '💡',
                 title: 'النصيحة',
-                child: _bullets(tier.traits),
+                child: _bullets(S.isFusha && tier.traitsFusha.isNotEmpty
+                    ? tier.traitsFusha
+                    : tier.traits),
               )),
-            if (tier.strengths.isNotEmpty)
+            if (tier.strengths.isNotEmpty || tier.strengthsFusha.isNotEmpty)
               _connectedCard(_sectionCard(
                 emoji: '✨',
                 title: 'نقاط القوة',
-                child: _bullets(tier.strengths),
+                child: _bullets(S.isFusha && tier.strengthsFusha.isNotEmpty
+                    ? tier.strengthsFusha
+                    : tier.strengths),
               )),
-            if (tier.weaknesses.isNotEmpty)
+            if (tier.weaknesses.isNotEmpty || tier.weaknessesFusha.isNotEmpty)
               _connectedCard(_sectionCard(
                 emoji: '🌧️',
                 title: 'نقاط الضعف',
-                child: _bullets(tier.weaknesses),
+                child: _bullets(S.isFusha && tier.weaknessesFusha.isNotEmpty
+                    ? tier.weaknessesFusha
+                    : tier.weaknesses),
               )),
-            if (tier.routine.isNotEmpty)
-              _connectedCard(_routineCard(tier.routine)),
+            if (tier.routine.isNotEmpty || tier.routineFusha.isNotEmpty)
+              _connectedCard(_routineCard(
+                S.isFusha && tier.routineFusha.isNotEmpty
+                    ? tier.routineFusha
+                    : tier.routine,
+              )),
 
             // ── bottom buttons ───────────────────────────────────────────
             const SizedBox(height: 22),
@@ -177,20 +199,20 @@ class _TestResultScreenState extends State<TestResultScreen> {
     );
   }
 
-  // ── level bars (5) ──────────────────────────────────────────────────────
+  // ── level ovals (5) — progressively taller, selected darkened ──────────
   Widget _levels() {
     const factors = [0.65, 0.45, 0.25, 0.10, -0.10];
     final labels = widget.test.levelLabels;
     return Padding(
-      padding: const EdgeInsets.only(top: 14),
+      padding: const EdgeInsets.only(top: 16),
       child: Column(
         children: [
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               for (var i = 0; i < 5; i++) ...[
-                if (i > 0) const SizedBox(width: 6),
-                Expanded(child: _bar(i, factors[i])),
+                if (i > 0) const SizedBox(width: 8),
+                Expanded(child: _oval(i, factors[i])),
               ],
             ],
           ),
@@ -198,14 +220,15 @@ class _TestResultScreenState extends State<TestResultScreen> {
           Row(
             children: [
               for (var i = 0; i < 5; i++) ...[
-                if (i > 0) const SizedBox(width: 6),
+                if (i > 0) const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     i < labels.length ? labels[i] : '',
                     textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                         fontFamily: 'Raleway',
-                        fontSize: i == widget.tierIndex ? 13 : 12,
+                        fontSize: i == widget.tierIndex ? 13 : 11,
                         fontWeight: i == widget.tierIndex
                             ? FontWeight.w700
                             : FontWeight.w400,
@@ -220,14 +243,18 @@ class _TestResultScreenState extends State<TestResultScreen> {
     );
   }
 
-  Widget _bar(int i, double factor) {
+  Widget _oval(int i, double factor) {
     final base = factor >= 0
         ? ImagePalette.lighten(_edge, factor)
         : ImagePalette.darken(_edge, -factor);
     final isUser = i == widget.tierIndex;
     final color = isUser ? ImagePalette.darken(base, 0.22) : base;
-    return Container(
-      height: isUser ? 12 : 8,
+    // Heights grow left→right: 20, 29, 38, 47, 56 dp; +10 bonus if selected
+    final height = 20.0 + (i * 9.0) + (isUser ? 10.0 : 0.0);
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeOut,
+      height: height,
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(999),
@@ -342,15 +369,15 @@ class _TestResultScreenState extends State<TestResultScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Align(
+          Align(
             alignment: AlignmentDirectional.centerStart,
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('🌿', style: TextStyle(fontSize: 18)),
-                SizedBox(width: 6),
-                Text('الروتين المناسب لكي',
-                    style: TextStyle(
+                const Text('🌿', style: TextStyle(fontSize: 18)),
+                const SizedBox(width: 6),
+                Text(S.localize('الروتين المناسب ليكي', 'الروتين المناسب لكِ'),
+                    style: const TextStyle(
                         fontFamily: 'Raleway',
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
@@ -467,16 +494,22 @@ class _TestResultScreenState extends State<TestResultScreen> {
   void _shareResult() {
     final t = widget.test;
     final tier = _tier;
-    final text = 'نتيجتي في اختبار "${t.title}":\n'
-        '► ${tier.title}\n\n'
-        '${tier.details}\n\n'
+    final testTitle = S.localize(t.title, t.titleFusha);
+    final tierTitle = S.localize(tier.title, tier.titleFusha);
+    final tierDetails = S.localize(tier.details, tier.detailsFusha);
+    final text = 'نتيجتي في اختبار "$testTitle":\n'
+        '► $tierTitle\n\n'
+        '$tierDetails\n\n'
         '📲 حمّلي تطبيق روتيني: $_kDownloadUrl';
-    // story-size image card the user can post to Snap/Insta
+    if (_coverAsset.isEmpty) {
+      Share.share(text);
+      return;
+    }
     showShareResultSheet(
       context,
-      headline: 'نتيجتي في "${t.title}"',
-      resultTitle: tier.title,
-      details: tier.details,
+      headline: 'نتيجتي في "$testTitle"',
+      resultTitle: tierTitle,
+      details: tierDetails,
       coverAsset: _coverAsset,
       edge: _edge,
       shareText: text,

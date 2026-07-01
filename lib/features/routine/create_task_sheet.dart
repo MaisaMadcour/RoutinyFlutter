@@ -126,12 +126,19 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
   }
 
   Future<void> _insertMultiDayTasks(TaskEntity template) async {
+    // Snapshot before any awaits to guard against concurrent UI modification.
+    final days = List<int>.from(_selectedDays);
     int? firstId;
-    for (final weekday in _selectedDays) {
+    DateTime? nearestDate;
+
+    for (final weekday in days) {
       var d = DateTime.now();
       while (d.weekday != weekday) {
         d = d.add(const Duration(days: 1));
       }
+      // Track the nearest upcoming occurrence across all selected weekdays
+      // so the routine page can jump straight to it after creation.
+      if (nearestDate == null || d.isBefore(nearestDate)) nearestDate = d;
       for (var i = 0; i < 52; i++) {
         final t = TaskEntity(
           title: template.title,
@@ -149,7 +156,14 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
     }
     // one daily reminder at the task time (fires at the next occurrence)
     if (firstId != null) await TaskReminder.sync(firstId, template);
-    if (mounted) Navigator.pop(context, null);
+    if (mounted) {
+      // Pop with a navigation hint (empty title = hint, date = first occurrence)
+      // so the routine page can jump to the day where the task first appears.
+      final navDate = nearestDate != null
+          ? '${nearestDate.year}-${nearestDate.month.toString().padLeft(2, '0')}-${nearestDate.day.toString().padLeft(2, '0')}'
+          : '';
+      Navigator.pop(context, TaskEntity(title: '', date: navDate));
+    }
   }
 
   Future<void> _pickTime() async {

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../core/ads/interstitial_manager.dart';
 import '../../core/app_strings.dart';
 import '../../core/database.dart';
 import '../../core/models.dart';
@@ -36,15 +35,8 @@ class _ReflectionActivityState extends State<ReflectionActivity> {
   void _next() {
     if (_step == 0 && _mood == null) return;
     if (_step == 2) {
-      // moving from the journal step to the result → save + show an
-      // interstitial (cap 5 min) before revealing the reflection result.
       if (!_saved) _save();
-      InterstitialManager.instance.showIfReady(
-        InterstitialManager.ctxReflectionResult,
-        onDone: () {
-          if (mounted) setState(() => _step = 3);
-        },
-      );
+      setState(() => _step = 3);
       return;
     }
     setState(() => _step = (_step + 1).clamp(0, 3));

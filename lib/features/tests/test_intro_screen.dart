@@ -27,10 +27,16 @@ class _TestIntroScreenState extends State<TestIntroScreen> {
   void initState() {
     super.initState();
     _bg = AppColors.parseHex(widget.test.cardBgColor);
-    ImagePalette.from(
-      'assets/images/${widget.test.coverAsset}.jpg',
-      fallback: _bg,
-    ).then((c) { if (mounted) setState(() => _bg = c); });
+    final fallback = _bg;
+    if (widget.test.coverBytes != null) {
+      ImagePalette.fromBytes(widget.test.coverBytes!, fallback: fallback)
+          .then((c) { if (mounted) setState(() => _bg = c); });
+    } else if (widget.test.coverAsset.isNotEmpty) {
+      ImagePalette.from(
+        'assets/images/${widget.test.coverAsset}.jpg',
+        fallback: fallback,
+      ).then((c) { if (mounted) setState(() => _bg = c); });
+    }
   }
 
   @override
@@ -49,12 +55,19 @@ class _TestIntroScreenState extends State<TestIntroScreen> {
                 // cover image with X button
                 Stack(
                   children: [
-                    Image.asset(
-                      'assets/images/${test.coverAsset}.jpg',
-                      width: double.infinity,
-                      height: 340,
-                      fit: BoxFit.cover,
-                    ),
+                    test.coverBytes != null
+                        ? Image.memory(
+                            test.coverBytes!,
+                            width: double.infinity,
+                            height: 340,
+                            fit: BoxFit.cover,
+                          )
+                        : Image.asset(
+                            'assets/images/${test.coverAsset}.jpg',
+                            width: double.infinity,
+                            height: 340,
+                            fit: BoxFit.cover,
+                          ),
                     Positioned(
                       top: 44,
                       left: 16,

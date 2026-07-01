@@ -7,8 +7,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <!-- AdMob advertising ID (required by Play when the app uses ads) -->
-    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
 
     <application
         android:label="روتيني"
@@ -44,11 +43,6 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
-        <!-- Google AdMob App ID -->
-        <meta-data
-            android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-1631773372582425~1786081340" />
-
         <!-- مُستقبِل كوتات كل ١٢ ساعة -->
         <receiver
             android:name=".notifications.QuoteNotificationReceiver"
@@ -78,6 +72,16 @@
         <receiver
             android:name=".notifications.CampaignReceiver"
             android:exported="false" />
+
+        <!-- مُستقبِل تذكيرات الماء -->
+        <receiver
+            android:name=".water.WaterReminderReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.routiny.routiny.WATER_REMIND" />
+                <action android:name="com.routiny.routiny.WATER_LOG_CUP" />
+            </intent-filter>
+        </receiver>
 
         <!-- مُستقبِل إعادة التشغيل -->
         <receiver

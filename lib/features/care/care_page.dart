@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
@@ -25,20 +26,27 @@ class CarePage extends StatefulWidget {
 
 class _CarePageState extends State<CarePage> {
   List<DynamicArticle> _dynamicArticles = [];
+  List<DynamicSection> _dynamicSections = [];
   StreamSubscription<List<DynamicArticle>>? _articleSub;
+  StreamSubscription<List<DynamicSection>>? _sectionSub;
 
   @override
   void initState() {
     super.initState();
     _articleSub = dynamicArticlesStream().listen(
       (list) => setState(() => _dynamicArticles = list),
-      onError: (_) {}, // offline — keep empty list, static sections unaffected
+      onError: (_) {},
+    );
+    _sectionSub = dynamicSectionsStream().listen(
+      (list) => setState(() => _dynamicSections = list),
+      onError: (_) {},
     );
   }
 
   @override
   void dispose() {
     _articleSub?.cancel();
+    _sectionSub?.cancel();
     super.dispose();
   }
 
@@ -84,6 +92,13 @@ class _CarePageState extends State<CarePage> {
                     const SizedBox(height: 6),
                     _breathingBanner(),
                     const SizedBox(height: 6),
+                    // ── Admin-defined categories (appear first) ──────────────
+                    for (var i = 0; i < _dynamicSections.length; i++)
+                      _dynamicSection(
+                        _dynamicSections[i],
+                        _accents[i % _accents.length],
+                      ),
+                    // ── Static hardcoded sections ────────────────────────────
                     for (var i = 0; i < careSections.length; i++)
                       _section(
                         careSections[i],
@@ -346,6 +361,62 @@ class _CarePageState extends State<CarePage> {
     );
   }
 
+  // ── Dynamic (admin-defined) section ──────────────────────────────────────
+  Widget _dynamicSection(DynamicSection section, Color accent) {
+    const cardW = 200.0;
+    const cardH = 280.0;
+    return Padding(
+      padding: const EdgeInsets.only(top: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18),
+            child: Container(
+              width: double.infinity,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEDD5C8),
+                borderRadius: BorderRadius.circular(100),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.auto_awesome,
+                      size: 16, color: AppColors.primary),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      section.label,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontFamily: 'Raleway',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.deepChocolate),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: cardH,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              itemCount: section.articles.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              itemBuilder: (context, i) =>
+                  _dynamicCard(section.articles[i], cardW, cardH, accent),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ── Section row ───────────────────────────────────────────────────────────
   Widget _section(
     CareSectionDef section,
@@ -377,13 +448,16 @@ class _CarePageState extends State<CarePage> {
                     color: AppColors.primary,
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    S.localize(section.title, section.titleFusha),
-                    style: const TextStyle(
-                        fontFamily: 'Raleway',
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.deepChocolate),
+                  Expanded(
+                    child: Text(
+                      S.localize(section.title, section.titleFusha),
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontFamily: 'Raleway',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.deepChocolate),
+                    ),
                   ),
                 ],
               ),
@@ -400,7 +474,7 @@ class _CarePageState extends State<CarePage> {
               itemBuilder: (context, i) {
                 // dynamic articles appear first
                 if (i < dynamics.length) {
-                  return _dynamicCard(dynamics[i], section, accent);
+                  return _dynamicCard(dynamics[i], section.cardW, section.cardH, accent);
                 }
                 // static articles follow
                 final card = section.cards[i - dynamics.length];
@@ -440,7 +514,7 @@ class _CarePageState extends State<CarePage> {
 
   // ── Dynamic article card (same shell as static cards) ─────────────────────
   Widget _dynamicCard(
-      DynamicArticle article, CareSectionDef section, Color accent) {
+      DynamicArticle article, double cardW, double cardH, Color accent) {
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
@@ -450,18 +524,19 @@ class _CarePageState extends State<CarePage> {
         ),
       ),
       child: _cardShell(
-        width: section.cardW,
-        height: section.cardH,
+        width: cardW,
+        height: cardH,
+        isNew: article.isNew,
         image: article.imageBytes != null
             ? Image.memory(
                 article.imageBytes!,
-                width: section.cardW,
-                height: section.cardH,
+                width: cardW,
+                height: cardH,
                 fit: BoxFit.cover,
               )
             : Container(
-                width: section.cardW,
-                height: section.cardH,
+                width: cardW,
+                height: cardH,
                 color: accent,
               ),
       ),
@@ -473,36 +548,74 @@ class _CarePageState extends State<CarePage> {
     required double width,
     required double height,
     required Widget image,
+    bool isNew = false,
   }) {
-    return SizedBox(
-      width: width,
-      child: Stack(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: image,
-          ),
-          Positioned(
-            bottom: 12,
-            right: 12,
-            child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(100),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: SizedBox(
+        width: width,
+        child: Stack(
+          children: [
+            image,
+            // ── "جديد" corner ribbon ─────────────────────────────────
+            if (isNew)
+              Positioned(
+                top: 16,
+                left: -26,
+                child: Transform.rotate(
+                  angle: -math.pi / 4,
+                  child: Container(
+                    width: 110,
+                    height: 32,
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Color(0xFFFF5252), Color(0xFFC62828)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                            color: Color(0x66000000),
+                            blurRadius: 8,
+                            offset: Offset(0, 3)),
+                      ],
+                    ),
+                    alignment: Alignment.center,
+                    child: const Text(
+                      'جديد',
+                      style: TextStyle(
+                          fontFamily: 'Raleway',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          letterSpacing: 1.5),
+                    ),
+                  ),
+                ),
               ),
-              child: const Text(
-                'اقرئي المزيد',
-                style: TextStyle(
-                    fontFamily: 'Raleway',
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primary),
+            // ── "اقرئي المزيد" badge ─────────────────────────────────
+            Positioned(
+              bottom: 12,
+              right: 12,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(100),
+                ),
+                child: const Text(
+                  'اقرئي المزيد',
+                  style: TextStyle(
+                      fontFamily: 'Raleway',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary),
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

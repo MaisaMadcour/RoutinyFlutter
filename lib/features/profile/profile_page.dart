@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../core/ads/rewarded_manager.dart';
 import '../../core/app_strings.dart';
 import '../../core/ar_dates.dart';
 import '../../core/database.dart';
@@ -32,7 +31,6 @@ class _ProfilePageState extends State<ProfilePage> {
     super.initState();
     _nameCtrl.text = RoutinyStats.userName;
     _loadReflections();
-    RewardedManager.instance.preload();
   }
 
   void _openJournal() {
@@ -40,57 +38,6 @@ class _ProfilePageState extends State<ProfilePage> {
         MaterialPageRoute(builder: (_) => const JournalScreen()));
   }
 
-  // مذكراتي is gated EVERY time: tap → confirm → watch a rewarded ad → open.
-  void _onJournalTap() {
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(S.openJournalBtn,
-            style: const TextStyle(
-                fontFamily: 'Raleway',
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: AppColors.deepChocolate)),
-        content: Text(
-          S.watchAdDialogBody,
-          style: const TextStyle(
-              fontFamily: 'Raleway', fontSize: 14, color: AppColors.secondaryText),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(S.notNow,
-                style: const TextStyle(
-                    fontFamily: 'Raleway', color: AppColors.secondaryText)),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              RewardedManager.instance.show(
-                onReward: () {
-                  if (mounted) _openJournal();
-                },
-                onUnavailable: () {
-                  if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(S.adUnavailableMsg)),
-                  );
-                },
-              );
-            },
-            child: Text(S.watchAdBtn,
-                style: const TextStyle(
-                    fontFamily: 'Raleway',
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primary)),
-          ),
-        ],
-      ),
-    );
-  }
 
   Future<void> _loadReflections() async {
     final list = await AppDatabase.instance.allReflections();
@@ -306,9 +253,9 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             ),
             const SizedBox(height: 22),
-            // ── مذكراتي (last) — gated behind a rewarded ad every time ──
+            // ── مذكراتي ──
             GestureDetector(
-              onTap: _onJournalTap,
+              onTap: _openJournal,
               child: Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -330,12 +277,8 @@ class _ProfilePageState extends State<ProfilePage> {
                               fontWeight: FontWeight.w700,
                               color: Color(0xFF3E2818))),
                     ),
-                    const Padding(
-                      padding: EdgeInsets.only(left: 6),
-                      child: Text('🔒', style: TextStyle(fontSize: 14)),
-                    ),
-                    const Icon(Icons.lock_outline,
-                        size: 20, color: AppColors.deepChocolate),
+                    const Icon(Icons.arrow_forward_ios,
+                        size: 16, color: AppColors.deepChocolate),
                   ],
                 ),
               ),

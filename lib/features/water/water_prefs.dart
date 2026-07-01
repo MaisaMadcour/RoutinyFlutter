@@ -29,6 +29,16 @@ class WaterPrefs {
   static set notificationSoundEnabled(bool v) =>
       Prefs.I.setBool('water_notification_sound_enabled', v);
 
+  static int get reminderStartHour =>
+      Prefs.I.getInt('water_reminder_start_hour', 8).clamp(0, 23);
+  static set reminderStartHour(int v) =>
+      Prefs.I.setInt('water_reminder_start_hour', v.clamp(0, 23));
+
+  static int get reminderEndHour =>
+      Prefs.I.getInt('water_reminder_end_hour', 22).clamp(0, 23);
+  static set reminderEndHour(int v) =>
+      Prefs.I.setInt('water_reminder_end_hour', v.clamp(0, 23));
+
   static int mlForDate(DateTime d) => Prefs.I.getInt('water_ml_${ymd(d)}', 0);
 
   static int get todayMl => mlForDate(DateTime.now());

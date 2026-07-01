@@ -11,6 +11,7 @@ class FocusSettings {
   static const _kPomoMin = 'fs_pomodoro_minutes';
   static const _kCycle = 'fs_pomodoro_cycle_sessions';
   static const _kBreak = 'fs_short_break_minutes';
+  static const _kDnd = 'fs_dnd_enabled';
 
   static bool get pomodoroLiveActivity => Prefs.I.getBool(_kPomoLive, true);
   static set pomodoroLiveActivity(bool v) => Prefs.I.setBool(_kPomoLive, v);
@@ -32,4 +33,7 @@ class FocusSettings {
 
   static int get shortBreakMinutes => Prefs.I.getInt(_kBreak, 5);
   static set shortBreakMinutes(int v) => Prefs.I.setInt(_kBreak, v);
+
+  static bool get dndEnabled => Prefs.I.getBool(_kDnd, false);
+  static set dndEnabled(bool v) => Prefs.I.setBool(_kDnd, v);
 }

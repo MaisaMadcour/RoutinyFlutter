@@ -77,4 +77,12 @@ class FocusNotification {
       await _channel.invokeMethod('stop');
     } catch (_) {}
   }
+
+  /// Open the system "Do Not Disturb access" settings page so the user can
+  /// grant policy access (required once for DND to work).
+  static Future<void> requestDndAccess() async {
+    try {
+      await _channel.invokeMethod('requestDndAccess');
+    } catch (_) {}
+  }
 }

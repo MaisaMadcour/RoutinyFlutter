@@ -1,7 +1,7 @@
 name: routiny
 description: "Routiny — a calm routine & self-care companion."
 publish_to: 'none'
-version: 1.1.5+19
+version: 1.1.6+103
 
 environment:
   sdk: ^3.12.0
@@ -21,7 +21,6 @@ dependencies:
   just_audio: ^0.9.42
   image_picker: ^1.1.2
   share_plus: ^10.1.4
-  google_mobile_ads: 6.0.0
   audio_session: ^0.1.25
   qr_flutter: ^4.1.0
   in_app_update: ^4.2.3

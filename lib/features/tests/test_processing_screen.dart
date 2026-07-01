@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../core/ads/interstitial_manager.dart';
+import '../../core/app_strings.dart';
 import '../../core/image_palette.dart';
 import '../../theme/app_colors.dart';
 import 'test_models.dart';
@@ -37,10 +37,16 @@ class _TestProcessingScreenState extends State<TestProcessingScreen>
   void initState() {
     super.initState();
     _edge = AppColors.parseHex(widget.test.cardBgColor);
-    ImagePalette.from(
-      'assets/images/${widget.test.coverAsset}.jpg',
-      fallback: AppColors.parseHex(widget.test.cardBgColor),
-    ).then((c) { if (mounted) setState(() => _edge = c); });
+    final fallback = AppColors.parseHex(widget.test.cardBgColor);
+    if (widget.test.coverBytes != null) {
+      ImagePalette.fromBytes(widget.test.coverBytes!, fallback: fallback)
+          .then((c) { if (mounted) setState(() => _edge = c); });
+    } else if (widget.test.coverAsset.isNotEmpty) {
+      ImagePalette.from(
+        'assets/images/${widget.test.coverAsset}.jpg',
+        fallback: fallback,
+      ).then((c) { if (mounted) setState(() => _edge = c); });
+    }
 
     // 0 → 100% over 5 s, linear (matches Android DURATION_MS = 5000)
     _ctrl = AnimationController(
@@ -61,19 +67,13 @@ class _TestProcessingScreenState extends State<TestProcessingScreen>
     final tier = ((widget.score / widget.maxScore) * widget.test.resultTiers.length)
         .floor()
         .clamp(0, widget.test.resultTiers.length - 1);
-    // show an interstitial (cap 5 min) before the result, then navigate
-    InterstitialManager.instance.showIfReady(
-      InterstitialManager.ctxTestResult,
-      onDone: () {
-        if (!mounted) return;
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) =>
-                TestResultScreen(test: widget.test, tierIndex: tier),
-          ),
-        );
-      },
+    if (!mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            TestResultScreen(test: widget.test, tierIndex: tier),
+      ),
     );
   }
 
@@ -97,7 +97,7 @@ class _TestProcessingScreenState extends State<TestProcessingScreen>
               left: 28,
               right: 28,
               child: Text(
-                'جاري تحليل نتيجة اختبار ${widget.test.title}',
+                'جاري تحليل نتيجة اختبار ${S.localize(widget.test.title, widget.test.titleFusha)}',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                     fontFamily: 'Raleway',

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../theme/app_colors.dart';
 import 'water_prefs.dart';
+import 'water_reminder_service.dart';
 
 String formatInterval(int min) {
   if (min < 60) return 'كل $min دقيقة';
@@ -9,6 +10,12 @@ String formatInterval(int min) {
   if (min == 120) return 'كل ساعتين';
   if (min % 60 == 0) return 'كل ${min ~/ 60} ساعات';
   return 'كل $min دقيقة';
+}
+
+String _formatHour(int hour) {
+  final h = hour % 12 == 0 ? 12 : hour % 12;
+  final period = hour < 12 ? 'ص' : 'م';
+  return '$h $period';
 }
 
 Future<void> showWaterSettings(BuildContext context) {
@@ -65,12 +72,48 @@ class _WaterSettingsSheetState extends State<_WaterSettingsSheet> {
                 formatInterval, WaterPrefs.reminderIntervalMin);
             if (v != null) setState(() => WaterPrefs.reminderIntervalMin = v);
           }),
+          _row('🌅', 'من الساعة', _formatHour(WaterPrefs.reminderStartHour),
+              () async {
+            final v = await _pickChoice('بداية التذكيرات',
+                List.generate(16, (i) => i + 6), _formatHour,
+                WaterPrefs.reminderStartHour);
+            if (v != null) setState(() => WaterPrefs.reminderStartHour = v);
+          }),
+          _row('🌙', 'لحد الساعة', _formatHour(WaterPrefs.reminderEndHour),
+              () async {
+            final v = await _pickChoice('نهاية التذكيرات',
+                List.generate(8, (i) => i + 18), _formatHour,
+                WaterPrefs.reminderEndHour);
+            if (v != null) setState(() => WaterPrefs.reminderEndHour = v);
+          }),
           _switchRow('💧', 'صوت الإشعار', WaterPrefs.notificationSoundEnabled,
               (v) => setState(
                   () => WaterPrefs.notificationSoundEnabled = v)),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: _applySettings,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              minimumSize: const Size(double.infinity, 52),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+              elevation: 0,
+            ),
+            child: const Text('تم التعديل',
+                style: TextStyle(
+                    fontFamily: 'Raleway',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700)),
+          ),
         ],
       ),
     );
+  }
+
+  Future<void> _applySettings() async {
+    await WaterReminderService.apply(enabled: WaterPrefs.reminderEnabled);
+    if (mounted) Navigator.pop(context);
   }
 
   Widget _row(String emoji, String label, String value, VoidCallback onTap) {

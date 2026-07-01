@@ -146,6 +146,23 @@ class MainActivity : FlutterActivity() {
                             )
                         result.success(null)
                     }
+                    "scheduleWaterReminder" -> {
+                        com.routiny.routiny.water.WaterReminderScheduler.scheduleNext(this)
+                        result.success(null)
+                    }
+                    "cancelWaterReminder" -> {
+                        com.routiny.routiny.water.WaterReminderScheduler.cancel(this)
+                        result.success(null)
+                    }
+                    "requestDndAccess" -> {
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                            val nm = getSystemService(android.app.NotificationManager::class.java)
+                            if (!nm.isNotificationPolicyAccessGranted) {
+                                startActivity(android.content.Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS))
+                            }
+                        }
+                        result.success(null)
+                    }
                     else -> result.notImplemented()
                 }
             }

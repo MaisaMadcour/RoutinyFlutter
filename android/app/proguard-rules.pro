@@ -3,11 +3,6 @@
 -keep class io.flutter.plugins.** { *; }
 -dontwarn io.flutter.embedding.**
 
-# Google Mobile Ads (AdMob)
--keep class com.google.android.gms.ads.** { *; }
--keep class com.google.android.gms.internal.ads.** { *; }
--dontwarn com.google.android.gms.ads.**
-
 # Play Core (deferred components) — referenced by Flutter, may be absent
 -dontwarn com.google.android.play.core.**
 

@@ -69,6 +69,47 @@ class ImagePalette {
 
   static Color? cached(String assetPath) => _cache[assetPath];
 
+  /// Same corner-pixel extraction but from raw bytes (e.g. base64-decoded
+  /// Firestore images). Not cached — bytes are transient.
+  static Future<Color> fromBytes(
+    Uint8List bytes, {
+    Color fallback = const Color(0xFFF5E6DD),
+  }) async {
+    try {
+      final codec = await ui.instantiateImageCodec(bytes, targetWidth: 120);
+      final frame = await codec.getNextFrame();
+      final image = frame.image;
+      final byteData =
+          await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+      if (byteData == null) return fallback;
+      final w = image.width;
+      final h = image.height;
+      if (w < 4 || h < 4) return fallback;
+      final pixels = byteData.buffer.asUint8List();
+      final corners = [
+        _pixel(pixels, w, 2, 2),
+        _pixel(pixels, w, w - 3, 2),
+        _pixel(pixels, w, 2, h - 3),
+        _pixel(pixels, w, w - 3, h - 3),
+      ];
+      var r = 0, g = 0, b = 0;
+      for (final c in corners) {
+        r += c.$1;
+        g += c.$2;
+        b += c.$3;
+      }
+      image.dispose();
+      return Color.fromARGB(
+        255,
+        (r / corners.length).round(),
+        (g / corners.length).round(),
+        (b / corners.length).round(),
+      );
+    } catch (_) {
+      return fallback;
+    }
+  }
+
   /// Mix [color] toward white. factor 0 = same, 1 = white. (Android `lighten`)
   static Color lighten(Color color, double factor) {
     final f = factor.clamp(0.0, 1.0);

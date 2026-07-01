@@ -27,10 +27,16 @@ class _TestQuestionScreenState extends State<TestQuestionScreen> {
   void initState() {
     super.initState();
     _edge = AppColors.parseHex(widget.test.cardBgColor);
-    ImagePalette.from(
-      'assets/images/${widget.test.coverAsset}.jpg',
-      fallback: AppColors.parseHex(widget.test.cardBgColor),
-    ).then((c) { if (mounted) setState(() => _edge = c); });
+    final fallback = AppColors.parseHex(widget.test.cardBgColor);
+    if (widget.test.coverBytes != null) {
+      ImagePalette.fromBytes(widget.test.coverBytes!, fallback: fallback)
+          .then((c) { if (mounted) setState(() => _edge = c); });
+    } else if (widget.test.coverAsset.isNotEmpty) {
+      ImagePalette.from(
+        'assets/images/${widget.test.coverAsset}.jpg',
+        fallback: fallback,
+      ).then((c) { if (mounted) setState(() => _edge = c); });
+    }
   }
 
   void _onAnswer(int option) {

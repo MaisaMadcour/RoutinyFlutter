@@ -8,11 +8,14 @@ import 'features/splash/splash_screen.dart';
 class RoutinyApp extends StatelessWidget {
   const RoutinyApp({super.key});
 
+  static final navigatorKey = GlobalKey<NavigatorState>();
+
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<String>(
       valueListenable: LangNotifier.instance,
       builder: (context, _, __) => MaterialApp(
+        navigatorKey: RoutinyApp.navigatorKey,
         title: 'روتيني',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,

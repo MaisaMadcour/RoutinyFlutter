@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 
-import '../../core/ads/interstitial_manager.dart';
 import '../../core/app_strings.dart';
 import '../../core/ar_dates.dart';
 import '../../core/database.dart';
@@ -59,8 +58,20 @@ class _RoutinePageState extends State<RoutinePage> {
   Future<void> _openCreate({TaskEntity? edit}) async {
     final result = await showCreateTaskSheet(context, edit: edit);
     if (result == null) {
-      // null can mean cancelled OR weekly tasks already inserted natively
-      await _reload();
+      // user cancelled — nothing changed
+      return;
+    }
+    if (result.title.isEmpty) {
+      // Navigation hint from _insertMultiDayTasks: jump to the first
+      // occurrence so the user can immediately see the new recurring task.
+      final d = DateTime.tryParse(result.date);
+      if (d != null) {
+        _weekCtrl.jumpToWeekOf(d);
+        _selectDay(d);
+        setState(() => _visibleWeek = ArDates.startOfWeek(d));
+      } else {
+        await _reload();
+      }
       return;
     }
     if (edit == null) {

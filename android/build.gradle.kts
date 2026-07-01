@@ -14,17 +14,6 @@ rootProject.layout.buildDirectory.value(newBuildDir)
 subprojects {
     val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
     project.layout.buildDirectory.value(newSubprojectBuildDir)
-
-    // Force every Android plugin module to compile against SDK 36
-    // (webview_flutter_android, pulled in by google_mobile_ads, requires it).
-    // Registered here — before evaluationDependsOn — so the callback exists
-    // before the projects are evaluated.
-    afterEvaluate {
-        val androidExt = extensions.findByName("android")
-        if (androidExt is com.android.build.gradle.BaseExtension) {
-            androidExt.compileSdkVersion(36)
-        }
-    }
 }
 
 subprojects {

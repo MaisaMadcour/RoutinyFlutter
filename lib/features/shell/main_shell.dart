@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/app_strings.dart';
 import '../../core/app_updater.dart';
+import '../../core/push_notifications.dart';
 import '../../theme/app_colors.dart';
 import '../notifications/notification_history_page.dart';
 import '../routine/routine_page.dart';
@@ -31,7 +32,10 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     ShellController.tab.value = widget.initialTab;
     AppUpdater.check();
     WidgetsBinding.instance.addObserver(this);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _checkOpenHistory());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkOpenHistory();
+      PushNotifications.handlePending();
+    });
   }
 
   @override
